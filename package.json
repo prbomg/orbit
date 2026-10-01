@@ -1,0 +1,52 @@
+{
+  "name": "orbit-automation-dashboard",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev --hostname 127.0.0.1",
+    "build": "prisma generate && next build --webpack",
+    "typecheck": "tsc --noEmit",
+    "start": "next start --hostname 127.0.0.1",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "node --env-file=.env prisma/seed.mjs",
+    "db:setup": "node --env-file=.env scripts/ensure-sqlite.mjs && prisma generate && prisma migrate deploy",
+    "test:api": "node --env-file=.env --test tests/api.test.mjs tests/projects-api.test.mjs",
+    "test:architecture": "node --test tests/project-migration.test.mjs tests/task-architecture.test.mjs",
+    "worker": "node worker/index.js",
+    "worker:once": "node worker/index.js --once",
+    "worker:install": "playwright install chromium",
+    "test:worker": "node --test tests/worker.test.mjs tests/profiles.test.mjs tests/warmup.test.mjs tests/search.test.mjs"
+  },
+  "dependencies": {
+    "2captcha": "npm:@2captcha/captcha-solver@^1.3.9",
+    "@prisma/client": "6.19.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "fingerprint-generator": "^2.1.88",
+    "fingerprint-injector": "^2.1.88",
+    "lucide-react": "^0.468.0",
+    "next": "^16.0.0",
+    "playwright": "^1.58.0",
+    "playwright-extra": "4.3.6",
+    "puppeteer-extra-plugin-stealth": "2.11.2",
+    "radix-ui": "^1.4.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "server-only": "0.0.1",
+    "tailwind-merge": "^3.0.0",
+    "zod": "3.25.76"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "prisma": "6.19.0",
+    "tailwindcss": "^4.1.0",
+    "tw-animate-css": "^1.3.0",
+    "typescript": "^5.9.0"
+  },
+  "packageManager": "pnpm@11.19.0"
+}
