@@ -1,0 +1,128 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Task {
+  id              String   @id @default(cuid())
+  projectId       String?
+  project         Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  targetExecutions Int @default(1)
+  currentExecutions Int @default(0)
+  yandexRegionId  Int?
+  executions      TaskExecution[]
+  projectUses     ProjectProfileUse[]
+  profileId       String
+  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  taskType        String   @default("target")
+  searchEngine    String   @default("")
+  searchQueries   Json     @default("[]")
+  vitalPhrases    Json     @default("[]")
+  url             String   @default("")
+  targetKeywords  Json     @default("[]")
+  status          String   @default("running")
+  createdAt       DateTime @default(now())
+
+  @@index([createdAt])
+  @@index([status])
+  @@index([profileId])
+  @@index([projectId])
+}
+
+model Profile {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  status    String   @default("new")
+  warmupScore Int @default(0)
+  isEnabled Boolean @default(true)
+  tasks     Task[]
+  warmedAt  DateTime?
+  executions TaskExecution[]
+  projectUses ProjectProfileUse[]
+  projectHistory ProfileProjectHistory[]
+}
+
+model Proxy {
+  id       String  @id @default(cuid())
+  host     String
+  port     Int
+  username String
+  password String
+  isActive Boolean @default(true)
+  rotationUrl String?
+
+  @@unique([host, port, username])
+}
+
+model Settings {
+  id              Int      @id @default(1)
+  rucaptchaApiKey  String?
+  openaiApiKey    String?
+  autoReplenishEnabled Boolean @default(false)
+  minReadyProfiles Int @default(100)
+  replenishBatchSize Int @default(100)
+  updatedAt       DateTime @default(now()) @updatedAt
+}
+
+
+model Project {
+  id String @id @default(cuid())
+  name String
+  targetUrl String @map("websiteUrl")
+  yandexRegionId String
+  regionName String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+  tasks Task[]
+  profileUses ProjectProfileUse[]
+  profileHistory ProfileProjectHistory[]
+}
+
+model ProfileProjectHistory {
+  id String @id @default(cuid())
+  profileId String
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  executedAt DateTime @default(now())
+  source String @default("execution")
+
+  @@index([profileId, projectId])
+  @@index([projectId, executedAt])
+}
+
+model ProjectProfileUse {
+  id String @id @default(cuid())
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  profileId String
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  taskId String?
+  task Task? @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  reservedAt DateTime @default(now())
+  usedAt DateTime?
+  @@unique([projectId, profileId])
+  @@index([taskId])
+}
+
+model TaskExecution {
+  id String @id @default(cuid())
+  taskId String
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  profileId String
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Restrict)
+  status String @default("queued")
+  attempts Int @default(0)
+  startedAt DateTime?
+  completedAt DateTime?
+  retryAfter DateTime?
+  errorCode String?
+  createdAt DateTime @default(now())
+  @@unique([taskId, profileId])
+  @@index([status, retryAfter])
+}

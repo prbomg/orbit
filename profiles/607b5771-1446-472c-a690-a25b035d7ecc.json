@@ -1,0 +1,351 @@
+{
+  "version": 2,
+  "profileId": "607b5771-1446-472c-a690-a25b035d7ecc",
+  "mobileOS": "android",
+  "canvasSeed": 2653065573,
+  "createdAt": "2026-10-01T08:38:25.439Z",
+  "savedAt": "2026-10-01T08:52:25.108Z",
+  "fingerprint": {
+    "navigator": {
+      "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+      "language": "en-US",
+      "languages": [
+        "en-US"
+      ],
+      "maxTouchPoints": 5,
+      "userAgentData": {
+        "brands": [
+          {
+            "brand": "Brave",
+            "version": "147"
+          },
+          {
+            "brand": "Not.A/Brand",
+            "version": "8"
+          },
+          {
+            "brand": "Chromium",
+            "version": "147"
+          }
+        ],
+        "mobile": true,
+        "platform": "Android",
+        "architecture": "",
+        "bitness": "",
+        "model": "",
+        "platformVersion": "13.0.0",
+        "uaFullVersion": "147.0.0.0",
+        "fullVersionList": [
+          {
+            "brand": "Brave",
+            "version": "147.0.0.0"
+          },
+          {
+            "brand": "Not.A/Brand",
+            "version": "8.0.0.0"
+          },
+          {
+            "brand": "Chromium",
+            "version": "147.0.0.0"
+          }
+        ]
+      },
+      "platform": "Linux armv81",
+      "deviceMemory": 8,
+      "hardwareConcurrency": 8,
+      "product": "Gecko",
+      "productSub": "20030107",
+      "vendor": "Google Inc.",
+      "vendorSub": null,
+      "doNotTrack": null,
+      "appCodeName": "Mozilla",
+      "appName": "Netscape",
+      "appVersion": "5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+      "oscpu": null,
+      "extraProperties": {
+        "vendorFlavors": [
+          "chrome"
+        ],
+        "globalPrivacyControl": true,
+        "pdfViewerEnabled": null,
+        "installedApps": []
+      },
+      "webdriver": false
+    },
+    "screen": {
+      "width": 384,
+      "height": 832,
+      "devicePixelRatio": 2.8125,
+      "innerWidth": 384,
+      "innerHeight": 832,
+      "availTop": 0,
+      "availLeft": 0,
+      "pageXOffset": 0,
+      "pageYOffset": 0,
+      "screenX": 0,
+      "hasHDR": true,
+      "availWidth": 384,
+      "availHeight": 832,
+      "clientWidth": 384,
+      "clientHeight": 832,
+      "outerWidth": 384,
+      "outerHeight": 832,
+      "colorDepth": 24,
+      "pixelDepth": 24
+    },
+    "videoCard": {
+      "vendor": "ARM",
+      "renderer": "Mali-G720 MC8"
+    },
+    "audioCodecs": {
+      "ogg": "probably",
+      "mp3": "probably",
+      "wav": "probably",
+      "m4a": "maybe",
+      "aac": "probably"
+    },
+    "videoCodecs": {
+      "ogg": "",
+      "h264": "probably",
+      "webm": "probably"
+    },
+    "pluginsData": {
+      "plugins": [],
+      "mimeTypes": []
+    },
+    "battery": {
+      "charging": true,
+      "chargingTime": 0,
+      "dischargingTime": null,
+      "level": 1
+    },
+    "multimediaDevices": {
+      "speakers": [
+        {
+          "deviceId": "",
+          "kind": "audiooutput",
+          "label": "",
+          "groupId": ""
+        }
+      ],
+      "micros": [
+        {
+          "deviceId": "",
+          "kind": "audioinput",
+          "label": "",
+          "groupId": ""
+        }
+      ],
+      "webcams": [
+        {
+          "deviceId": "",
+          "kind": "videoinput",
+          "label": "",
+          "groupId": ""
+        }
+      ]
+    },
+    "fonts": [
+      "sans-serif-thin"
+    ],
+    "mockWebRTC": false,
+    "slim": false
+  },
+  "headers": {
+    "sec-ch-ua": "\"Google Chrome\";v=\"147\", \"Not.A/Brand\";v=\"8\", \"Chromium\";v=\"147\"",
+    "sec-ch-ua-mobile": "?1",
+    "sec-ch-ua-platform": "\"Android\"",
+    "upgrade-insecure-requests": "1",
+    "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "sec-fetch-site": "same-site",
+    "sec-fetch-mode": "navigate",
+    "sec-fetch-user": "?1",
+    "sec-fetch-dest": "document",
+    "accept-encoding": "gzip, deflate, br, zstd",
+    "accept-language": "en-US"
+  },
+  "cookies": [
+    {
+      "name": "PHPSESSID",
+      "value": "EZQ9C8BeRduqvGbqvpop2gMQBRTsc1aa",
+      "domain": "uniofweb.ru",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    },
+    {
+      "name": "_ym_uid",
+      "value": "1790843909637419539",
+      "domain": ".uniofweb.ru",
+      "path": "/",
+      "expires": 1822379909,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_ym_d",
+      "value": "1790843909",
+      "domain": ".uniofweb.ru",
+      "path": "/",
+      "expires": 1822379909,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "yabs-sid",
+      "value": "1133733291790843909",
+      "domain": "mc.yandex.ru",
+      "path": "/",
+      "expires": -1,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "i",
+      "value": "ks2wt2MeEoN5VnaHCj6M1Z/rXjNbUhhPrZpISiVhHt6Ctog/2FOI/s/GoglcJ7676pp83dkbwG5WHTg/d/e5gI9Fl0Y=",
+      "domain": ".yandex.ru",
+      "path": "/",
+      "expires": 1825403909.868524,
+      "httpOnly": true,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "yandexuid",
+      "value": "2211387531790843909",
+      "domain": ".yandex.ru",
+      "path": "/",
+      "expires": 1825403909.868563,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "yuidss",
+      "value": "2211387531790843909",
+      "domain": ".yandex.ru",
+      "path": "/",
+      "expires": 1825403909.868588,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "ymex",
+      "value": "2106203909.yrts.1790843909#2106203909.yrtsi.1790843909",
+      "domain": ".yandex.ru",
+      "path": "/",
+      "expires": 1822379909,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_ym_isad",
+      "value": "2",
+      "domain": ".uniofweb.ru",
+      "path": "/",
+      "expires": 1790915909,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_ym_visorc",
+      "value": "w",
+      "domain": ".uniofweb.ru",
+      "path": "/",
+      "expires": 1790846472,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "mdd",
+      "value": "0",
+      "domain": ".uniofweb.ru",
+      "path": "/",
+      "expires": 1790930331,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "_yasc",
+      "value": "bwUmr+hxU0Lwyt76Jlgqgk6OM4kfiDHLTJfHB180w6/z2dGCHRP6qHlweuJsiTobyrOqNwbJ",
+      "domain": ".yandex.ru",
+      "path": "/",
+      "expires": 1825404654.552878,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    },
+    {
+      "name": "bh",
+      "value": "EkAiR29vZ2xlIENocm9tZSI7dj0iMTQ3IiwgIk5vdC5BL0JyYW5kIjt2PSI4IiwgIkNocm9taXVtIjt2PSIxNDciIgkxNDcuMC4wLjAqAj8xOgkiQW5kcm9pZCJCBjEzLjAuMFJIIkJyYXZlIjt2PSIxNDcuMC4wLjAiLCJOb3QuQS9CcmFuZCI7dj0iOC4wLjAuMCIsIkNocm9taXVtIjt2PSIxNDcuMC4wLjAiYIC++NUGah7cyqXsBs+fnO8Liv/v6wP8ua//B9/975wM5bXNhwg=",
+      "domain": ".yandex.ru",
+      "path": "/",
+      "expires": 1825404672.688601,
+      "httpOnly": false,
+      "secure": true,
+      "sameSite": "None"
+    }
+  ],
+  "origins": [
+    {
+      "origin": "https://uniofweb.ru",
+      "localStorage": [
+        {
+          "name": "_ym_synced",
+          "value": "{}"
+        },
+        {
+          "name": "_ym_afr:i",
+          "value": "3"
+        },
+        {
+          "name": "_ym_retryReqs",
+          "value": "{}"
+        },
+        {
+          "name": "_ym_jn",
+          "value": "true"
+        },
+        {
+          "name": "_ym891932_lastHit",
+          "value": "1790844687146"
+        },
+        {
+          "name": "_ym891932_lsid",
+          "value": "1042400451892"
+        },
+        {
+          "name": "_ym_afr",
+          "value": "\"clxtmr1_jb972ic-d0ec410071b143f9790044be583cd5d5-7c535c30ab676b5e84770f2e0a6419a6-2gbaah7b_17-3760000000-3936d86e_3je1869h_2ge94bhb_41e8bifi-384x832x0-unknown-\""
+        },
+        {
+          "name": "_ym_uid",
+          "value": "\"1790843909637419539\""
+        },
+        {
+          "name": "_ym_wv2rf:891932:0",
+          "value": "1"
+        },
+        {
+          "name": "_ym_afr:v",
+          "value": "\"2\""
+        },
+        {
+          "name": "_ym891932:0_reqNum",
+          "value": "6"
+        }
+      ]
+    }
+  ]
+}

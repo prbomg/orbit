@@ -1,0 +1,20 @@
+"use client";
+import { useState, type FormEvent } from "react";
+import { Pencil, Plus } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { type Proxy, type ProxyInput, useData } from "@/lib/data-store";
+export function ProxyEditor({ proxy }: { proxy?: Proxy }) {
+  const { addProxies, updateProxy, pendingIds } = useData(); const [open, setOpen] = useState(false); const [saving, setSaving] = useState(false); const [error, setError] = useState("");
+  async function submit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault(); const form = new FormData(event.currentTarget); setSaving(true); setError("");
+    const data: Partial<ProxyInput> = { host: String(form.get("host")).trim(), port: Number(form.get("port")), username: String(form.get("username")).trim(), isActive: form.get("isActive") === "on", rotationUrl: String(form.get("rotationUrl") ?? "").trim() || null };
+    const password = String(form.get("password") ?? ""); if (password) data.password = password;
+    try { if (proxy) await updateProxy(proxy.id, data); else await addProxies([data as ProxyInput]); setOpen(false); }
+    catch (cause) { setError(cause instanceof Error ? cause.message : "Не удалось сохранить прокси"); }
+    finally { setSaving(false); }
+  }
+  return <Dialog open={open} onOpenChange={value => { if (!saving) { setOpen(value); setError(""); } }}><DialogTrigger asChild>{proxy ? <Button variant="ghost" size="icon" disabled={pendingIds.has(proxy.id)} aria-label={`Редактировать прокси ${proxy.host}:${proxy.port}`} title="Редактировать прокси"><Pencil size={15} /></Button> : <Button><Plus size={16} />Добавить один прокси</Button>}</DialogTrigger><DialogContent className="max-h-[90dvh] overflow-y-auto"><DialogHeader><DialogTitle>{proxy ? "Редактирование прокси" : "Новый прокси"}</DialogTitle><DialogDescription>Соединение с авторизацией и необязательной сменой IP.</DialogDescription></DialogHeader><form onSubmit={submit} className="space-y-4"><div className="grid grid-cols-2 gap-3"><div className="space-y-2"><Label htmlFor="proxy-host">IP или hostname</Label><Input id="proxy-host" name="host" defaultValue={proxy?.host} placeholder="proxy.example.com" required maxLength={253} disabled={saving} /></div><div className="space-y-2"><Label htmlFor="proxy-port">Порт</Label><Input id="proxy-port" name="port" type="number" min={1} max={65535} defaultValue={proxy?.port} required disabled={saving} /></div></div><div className="space-y-2"><Label htmlFor="proxy-username">Логин</Label><Input id="proxy-username" name="username" defaultValue={proxy?.username} required maxLength={200} disabled={saving} /></div><div className="space-y-2"><Label htmlFor="proxy-password">{proxy ? "Новый пароль" : "Пароль"}</Label><Input id="proxy-password" name="password" type="password" required={!proxy} maxLength={1000} autoComplete="new-password" disabled={saving} /><p className="field-help">{proxy ? "Оставьте пустым, чтобы сохранить действующий пароль." : "Учётные данные вашего провайдера."}</p></div><div className="space-y-2"><Label htmlFor="proxy-rotation-url">Ссылка смены IP</Label><Input id="proxy-rotation-url" name="rotationUrl" type="password" defaultValue={proxy?.rotationUrl ?? ""} placeholder="https://provider.example/rotate?key=…" maxLength={2048} autoComplete="off" disabled={saving} /><p className="field-help">Необязательно. GET-запрос перед запуском, затем ожидание 15 секунд.</p></div><label className="flex items-center gap-2 text-sm"><input type="checkbox" name="isActive" defaultChecked={proxy?.isActive ?? true} disabled={saving} className="accent-primary" />Использовать в задачах</label>{error && <p role="alert" className="form-error">{error}</p>}<DialogFooter><Button type="submit" disabled={saving}>{saving ? "Сохранение…" : "Сохранить прокси"}</Button></DialogFooter></form></DialogContent></Dialog>;
+}
