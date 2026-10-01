@@ -132,7 +132,7 @@ export function createCaptchaHandler({ prisma, config, proxy, userAgent, shouldC
       attempts++;
       log('captcha_detected', { taskId, provider: 'smartcaptcha_image', attempt: attempts });
       try {
-        return await solveYandexImagePuzzle(page, imagePuzzle, { prisma, config, signal, shouldContinue, log, taskId });
+        return await solveYandexImagePuzzle(page, imagePuzzle, { prisma, config, signal, shouldContinue, log, taskId, navigationPolicy });
       } catch (error) {
         log('captcha_failed', { taskId, provider: 'smartcaptcha_image', attempt: attempts, errorType: error.name,
           ...(error instanceof CaptchaError ? { code: error.code } : {}) });

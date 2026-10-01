@@ -3,11 +3,16 @@ import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
 import { chromium } from 'playwright';
 import { createCaptchaHandler } from '../worker/captcha-page.mjs';
+import { restrictNavigation } from '../worker/action-executor.mjs';
 
-for (const { failures, crossOrigin, downloadStatus = 200 } of [
+for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, submitLabel = 'Continue', autoSubmit = false } of [
   { failures: 0 }, { failures: 1 }, { failures: 3 },
   { failures: 0, crossOrigin: true }, { failures: 0, crossOrigin: true, downloadStatus: 403 },
-]) test(`Yandex image solving preserves source detail and bounds retries (${failures} provider failures, cross-origin: ${Boolean(crossOrigin)}, image HTTP ${downloadStatus})`, async () => {
+  { failures: 0, formPost: true },
+  { failures: 0, formPost: true, submitLabel: 'Подтвердить выбор' },
+  { failures: 0, submitLabel: 'Далее' },
+  { failures: 0, formPost: true, autoSubmit: true },
+]) test(`Yandex image solving preserves source detail and bounds retries (${failures} provider failures, cross-origin: ${Boolean(crossOrigin)}, image HTTP ${downloadStatus}, POST: ${formPost}, button: ${submitLabel}, auto-submit: ${autoSubmit})`, async () => {
   const requests = [];
   const image = (width, height) => `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><pattern id="p" patternUnits="userSpaceOnUse" width="2" height="1"><rect width="2" height="1" fill="white"/><rect width="1" height="1" fill="red"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>`;
   const imageDownloads = [];
@@ -43,19 +48,29 @@ for (const { failures, crossOrigin, downloadStatus = 200 } of [
       await context.route(`${providerUrl}/*.svg`, route => route.fulfill({ contentType: 'image/svg+xml',
         body: route.request().url().endsWith('/main.svg') ? image(320, 180) : image(480, 80) }));
     }
-    await context.route(challengeUrl, route => route.fulfill({ contentType: 'text/html', body: `
+    await context.route(challengeUrl, route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: `
       <form id="checkbox-captcha-form"><button type="button" role="checkbox" onclick="document.getElementById('puzzle').hidden=false">I'm not a robot</button></form>
-      <div id="puzzle" hidden>
+      <${formPost ? 'form method="post" action="/captcha-submit"' : 'div'} id="puzzle" hidden>
         <div style="position:relative;width:240px;height:135px;margin:25px">
           <img id="main" src="${main}" style="width:100%;height:100%;pointer-events:none">
-          <div id="input-layer" style="position:absolute;inset:0" onclick="window.receivedPoint={x:event.offsetX,y:event.offsetY};window.clicked=(window.clicked||0)+1"></div>
+          <div id="input-layer" style="position:absolute;inset:0" onclick="window.receivedPoint={x:event.offsetX,y:event.offsetY};window.clicked=(window.clicked||0)+1;${formPost ? "document.getElementById('point-x').value=event.offsetX;document.getElementById('point-y').value=event.offsetY;" + (autoSubmit ? "setTimeout(() => document.getElementById('puzzle').requestSubmit(), 50);" : "setTimeout(() => document.getElementById('submit-puzzle').disabled=false, 400);") : ''}"></div>
         </div>
         <img src="${instruction}" style="width:120px;height:20px">
-        <button onclick="if(window.clicked === 1) location.href='/search/?clicked=1&x='+window.receivedPoint.x+'&y='+window.receivedPoint.y">Continue</button>
-      </div>` }));
+        ${formPost ? `<input type="hidden" name="x" id="point-x"><input type="hidden" name="y" id="point-y"><button type="submit" id="submit-puzzle" disabled>${submitLabel}</button>` : `<button onclick="if(window.clicked === 1) location.href='/search/?clicked=1&x='+window.receivedPoint.x+'&y='+window.receivedPoint.y">${submitLabel}</button>`}
+      </${formPost ? 'form' : 'div'}>` }));
+    let submitted = false;
+    await context.route('**://ya.ru/captcha-submit', async route => {
+      assert.equal(route.request().method(), 'POST');
+      const coordinates = new URLSearchParams(route.request().postData());
+      submitted = true;
+      // A browser redirect starts a new routed request; HTTP redirect follow-ups
+      // bypass Playwright routing and would reach the real search provider.
+      await route.fulfill({ contentType: 'text/html', body: `<script>location.replace('/search/?clicked=1&x=${coordinates.get('x')}&y=${coordinates.get('y')}')</script>` });
+    });
     await context.route('**://ya.ru/search/**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Results</h1>' }));
     const page = await context.newPage();
     await page.goto(challengeUrl);
+    const navigationPolicy = formPost ? await restrictNavigation(context, new URL(challengeUrl).origin) : { clearCaptchaPost() {} };
     if (crossOrigin) {
       assert.equal(await page.locator('#main').evaluate(async image => {
         await image.decode();
@@ -68,7 +83,7 @@ for (const { failures, crossOrigin, downloadStatus = 200 } of [
     const check = createCaptchaHandler({
       prisma: { settings: { findUnique: async () => ({ rucaptchaApiKey: 'synthetic-key' }) } },
       config: { captchaWidgetWaitMs: 1000, captchaMaxSolves: 3, captchaBaseUrl: `http://127.0.0.1:${provider.address().port}`, captchaV2BaseUrl: `http://127.0.0.1:${provider.address().port}`, captchaPollingMs: 50, captchaTimeoutMs: 5000, navigationTimeoutMs: 2000 },
-      shouldContinue: async () => true, taskId: 'fixture', log: event => events.push(event), navigationPolicy: { clearCaptchaPost() {} },
+      shouldContinue: async () => true, taskId: 'fixture', log: event => events.push(event), navigationPolicy,
     });
     if (downloadStatus !== 200) {
       await assert.rejects(check(page), error => error.code === 'image_capture_failed');
@@ -85,8 +100,12 @@ for (const { failures, crossOrigin, downloadStatus = 200 } of [
       await context.close();
       return;
     }
-    assert.equal(await check(page), true);
+    let handled;
+    try { handled = await check(page); }
+    catch (error) { assert.fail(`${error.code}: ${new URL(page.url()).pathname}, submitted=${submitted}, events=${events.join(',')}`); }
+    assert.equal(handled, true);
     assert.equal(new URL(page.url()).pathname, '/search/');
+    if (formPost) assert.equal(submitted, true);
     assert.equal(new URL(page.url()).searchParams.get('clicked'), '1');
     assert.ok(Math.abs(Number(new URL(page.url()).searchParams.get('x')) - 60) <= 1);
     assert.ok(Math.abs(Number(new URL(page.url()).searchParams.get('y')) - 68) <= 1);
