@@ -4,9 +4,21 @@ import { createServer } from 'node:http';
 import { chromium } from 'playwright';
 import { createCaptchaHandler } from '../worker/captcha-page.mjs';
 
-for (const failures of [0, 1, 3]) test(`Yandex image solving preserves source detail and bounds retries (${failures} provider failures)`, async () => {
+for (const { failures, crossOrigin, downloadStatus = 200 } of [
+  { failures: 0 }, { failures: 1 }, { failures: 3 },
+  { failures: 0, crossOrigin: true }, { failures: 0, crossOrigin: true, downloadStatus: 403 },
+]) test(`Yandex image solving preserves source detail and bounds retries (${failures} provider failures, cross-origin: ${Boolean(crossOrigin)}, image HTTP ${downloadStatus})`, async () => {
   const requests = [];
+  const image = (width, height) => `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><pattern id="p" patternUnits="userSpaceOnUse" width="2" height="1"><rect width="2" height="1" fill="white"/><rect width="1" height="1" fill="red"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>`;
+  const imageDownloads = [];
   const provider = createServer((request, response) => {
+    if (request.url === '/main.svg' || request.url === '/instruction.svg') {
+      imageDownloads.push({ url: request.url, referer: request.headers.referer, cookie: request.headers.cookie });
+      response.statusCode = downloadStatus;
+      response.setHeader('content-type', 'image/svg+xml');
+      response.end(request.url === '/main.svg' ? image(320, 180) : image(480, 80));
+      return;
+    }
     response.setHeader('content-type', 'application/json');
     if (request.url === '/createTask') {
       let body = '';
@@ -20,9 +32,18 @@ for (const failures of [0, 1, 3]) test(`Yandex image solving preserves source de
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    const image = (width, height) => `data:image/svg+xml;base64,${Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><pattern id="p" patternUnits="userSpaceOnUse" width="2" height="1"><rect width="2" height="1" fill="white"/><rect width="1" height="1" fill="red"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>`).toString('base64')}`;
-    const main = image(320, 180); const instruction = image(480, 80);
-    await context.route('https://ya.ru/showcaptcha', route => route.fulfill({ contentType: 'text/html', body: `
+    const providerUrl = `http://127.0.0.1:${provider.address().port}`;
+    const main = crossOrigin ? `${providerUrl}/main.svg` : `data:image/svg+xml;base64,${Buffer.from(image(320, 180)).toString('base64')}`;
+    const instruction = crossOrigin ? `${providerUrl}/instruction.svg` : `data:image/svg+xml;base64,${Buffer.from(image(480, 80)).toString('base64')}`;
+    const challengeUrl = `${crossOrigin ? 'http' : 'https'}://ya.ru/showcaptcha`;
+    if (crossOrigin) {
+      await context.addCookies([{ name: 'image-session', value: 'fixture', url: providerUrl }]);
+      // Fulfill browser loads so private-network restrictions do not obscure
+      // the canvas CORS failure. APIRequestContext still uses the real server.
+      await context.route(`${providerUrl}/*.svg`, route => route.fulfill({ contentType: 'image/svg+xml',
+        body: route.request().url().endsWith('/main.svg') ? image(320, 180) : image(480, 80) }));
+    }
+    await context.route(challengeUrl, route => route.fulfill({ contentType: 'text/html', body: `
       <form id="checkbox-captcha-form"><button type="button" role="checkbox" onclick="document.getElementById('puzzle').hidden=false">I'm not a robot</button></form>
       <div id="puzzle" hidden>
         <div style="position:relative;width:240px;height:135px;margin:25px">
@@ -32,15 +53,31 @@ for (const failures of [0, 1, 3]) test(`Yandex image solving preserves source de
         <img src="${instruction}" style="width:120px;height:20px">
         <button onclick="if(window.clicked === 1) location.href='/search/?clicked=1&x='+window.receivedPoint.x+'&y='+window.receivedPoint.y">Continue</button>
       </div>` }));
-    await context.route('https://ya.ru/search/**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Results</h1>' }));
+    await context.route('**://ya.ru/search/**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Results</h1>' }));
     const page = await context.newPage();
-    await page.goto('https://ya.ru/showcaptcha');
+    await page.goto(challengeUrl);
+    if (crossOrigin) {
+      assert.equal(await page.locator('#main').evaluate(async image => {
+        await image.decode();
+        const canvas = document.createElement('canvas');
+        canvas.getContext('2d').drawImage(image, 0, 0);
+        try { canvas.toDataURL(); return false; } catch (error) { return error.name === 'SecurityError'; }
+      }), true);
+    }
     const events = [];
     const check = createCaptchaHandler({
       prisma: { settings: { findUnique: async () => ({ rucaptchaApiKey: 'synthetic-key' }) } },
       config: { captchaWidgetWaitMs: 1000, captchaMaxSolves: 3, captchaBaseUrl: `http://127.0.0.1:${provider.address().port}`, captchaV2BaseUrl: `http://127.0.0.1:${provider.address().port}`, captchaPollingMs: 50, captchaTimeoutMs: 5000, navigationTimeoutMs: 2000 },
       shouldContinue: async () => true, taskId: 'fixture', log: event => events.push(event), navigationPolicy: { clearCaptchaPost() {} },
     });
+    if (downloadStatus !== 200) {
+      await assert.rejects(check(page), error => error.code === 'image_capture_failed');
+      assert.equal(requests.length, 0);
+      assert.ok(!events.includes('captcha_requested'));
+      assert.ok(!events.includes('captcha_retrying'));
+      await context.close();
+      return;
+    }
     if (failures >= 3) {
       await assert.rejects(check(page), error => error.code === 'solve_limit');
       assert.equal(requests.length, 3);
@@ -66,6 +103,11 @@ for (const failures of [0, 1, 3]) test(`Yandex image solving preserves source de
       return [Array.from(context.getImageData(10, 90, 1, 1).data), Array.from(context.getImageData(11, 90, 1, 1).data)];
     }, requests[0].task.imgInstructions);
     assert.deepEqual(samples, [[255, 0, 0, 255], [255, 255, 255, 255]]);
+    if (crossOrigin) {
+      for (const url of ['/main.svg', '/instruction.svg']) {
+        assert.ok(imageDownloads.some(item => item.url === url && item.referer === challengeUrl && item.cookie?.includes('image-session=fixture')));
+      }
+    }
     assert.ok(events.includes('captcha_coordinates_applied'));
     await context.close();
   } finally {

@@ -23,25 +23,56 @@ export async function detectYandexImagePuzzle(page) {
   return null;
 }
 
-async function captureAtSize(locator, width, height) {
+async function renderAtSize(image, { width, height, dataUrl, sourceUrl }) {
+  if (dataUrl) {
+    if (!(image instanceof HTMLImageElement) || image.currentSrc !== sourceUrl) throw new Error('Image changed');
+    image = new Image(); image.src = dataUrl;
+  }
+  if (image instanceof HTMLImageElement) await image.decode();
+  const sourceWidth = image.naturalWidth ?? image.width;
+  const sourceHeight = image.naturalHeight ?? image.height;
+  if (!sourceWidth || !sourceHeight) throw new Error('Image not decoded');
+  const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
+  const context = canvas.getContext('2d');
+  context.fillStyle = '#303035'; context.fillRect(0, 0, width, height);
+  const scale = Math.min(width / sourceWidth, height / sourceHeight);
+  const renderedWidth = sourceWidth * scale; const renderedHeight = sourceHeight * scale;
+  context.drawImage(image, (width - renderedWidth) / 2, (height - renderedHeight) / 2, renderedWidth, renderedHeight);
+  return canvas.toDataURL('image/png').split(',')[1];
+}
+
+async function captureAtSize(locator, width, height, signal) {
   try {
     // Draw the decoded source at its intrinsic resolution. A screenshot of the
     // instruction strip can be only 120×20 CSS pixels on mobile; enlarging that
     // screenshot loses the shapes the solver needs to distinguish.
-    return await locator.evaluate(async (image, { width, height }) => {
-      if (image instanceof HTMLImageElement) await image.decode();
-      const sourceWidth = image.naturalWidth ?? image.width;
-      const sourceHeight = image.naturalHeight ?? image.height;
-      if (!sourceWidth || !sourceHeight) throw new Error('Image not decoded');
-      const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
-      const context = canvas.getContext('2d');
-      context.fillStyle = '#303035'; context.fillRect(0, 0, width, height);
-      const scale = Math.min(width / sourceWidth, height / sourceHeight);
-      const renderedWidth = sourceWidth * scale; const renderedHeight = sourceHeight * scale;
-      context.drawImage(image, (width - renderedWidth) / 2, (height - renderedHeight) / 2, renderedWidth, renderedHeight);
-      return canvas.toDataURL('image/png').split(',')[1];
-    }, { width, height });
-  } catch { throw new CaptchaError('image_capture_failed'); }
+    try { return await locator.evaluate(renderAtSize, { width, height }); }
+    catch (error) {
+      if (!String(error.message).includes('SecurityError')) throw error;
+    }
+    // Cross-origin images can be displayed but taint canvas without CORS.
+    // Fetch the original using the context's cookies/proxy, then decode a local
+    // data URL to preserve the source pixels instead of enlarging a screenshot.
+    signal?.throwIfAborted();
+    const source = await locator.evaluate(image => ({
+      url: image instanceof HTMLImageElement ? image.currentSrc : '', referer: location.href,
+    }));
+    if (!['http:', 'https:'].includes(new URL(source.url).protocol)) throw new Error('Unsupported image source');
+    const response = await locator.page().request.get(source.url, { headers: { referer: source.referer }, timeout: 10_000 });
+    try {
+      if (!response.ok()) throw new Error('Image download failed');
+      const contentType = response.headers()['content-type']?.split(';')[0].trim().toLowerCase();
+      if (!contentType?.startsWith('image/')) throw new Error('Invalid image response');
+      const body = await response.body();
+      signal?.throwIfAborted();
+      if (!body.length || body.length > 5_000_000) throw new Error('Invalid image size');
+      return await locator.evaluate(renderAtSize, { width, height, sourceUrl: source.url,
+        dataUrl: `data:${contentType};base64,${body.toString('base64')}` });
+    } finally { await response.dispose(); }
+  } catch {
+    signal?.throwIfAborted();
+    throw new CaptchaError('image_capture_failed');
+  }
 }
 
 export async function solveYandexImagePuzzle(page, puzzle, { prisma, config, signal, shouldContinue, log, taskId }) {
@@ -50,8 +81,8 @@ export async function solveYandexImagePuzzle(page, puzzle, { prisma, config, sig
   const settings = await prisma.settings.findUnique({ where: { id: 1 }, select: { rucaptchaApiKey: true } });
   if (!settings?.rucaptchaApiKey) throw new CaptchaError('missing_api_key');
   const originalUrl = page.url();
-  const image = await captureAtSize(puzzle.main, 320, 180);
-  const imgInstructions = await captureAtSize(puzzle.instruction, 480, 180);
+  const image = await captureAtSize(puzzle.main, 320, 180, signal);
+  const imgInstructions = await captureAtSize(puzzle.instruction, 480, 180, signal);
   log('captcha_requested', { taskId, provider: 'smartcaptcha_image' });
   const solution = await requestCaptchaSolution({ apiKey: settings.rucaptchaApiKey, type: 'smartcaptcha_image',
     params: { image, imgInstructions }, config, signal, shouldContinue });
