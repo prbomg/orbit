@@ -85,14 +85,6 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
       config: { captchaWidgetWaitMs: 1000, captchaMaxSolves: 3, captchaBaseUrl: `http://127.0.0.1:${provider.address().port}`, captchaV2BaseUrl: `http://127.0.0.1:${provider.address().port}`, captchaPollingMs: 50, captchaTimeoutMs: 5000, navigationTimeoutMs: 2000 },
       shouldContinue: async () => true, taskId: 'fixture', log: event => events.push(event), navigationPolicy,
     });
-    if (downloadStatus !== 200) {
-      await assert.rejects(check(page), error => error.code === 'image_capture_failed');
-      assert.equal(requests.length, 0);
-      assert.ok(!events.includes('captcha_requested'));
-      assert.ok(!events.includes('captcha_retrying'));
-      await context.close();
-      return;
-    }
     if (failures >= 3) {
       await assert.rejects(check(page), error => error.code === 'solve_limit');
       assert.equal(requests.length, 3);
@@ -123,9 +115,7 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
     }, requests[0].task.imgInstructions);
     assert.deepEqual(samples, [[255, 0, 0, 255], [255, 255, 255, 255]]);
     if (crossOrigin) {
-      for (const url of ['/main.svg', '/instruction.svg']) {
-        assert.ok(imageDownloads.some(item => item.url === url && item.referer === challengeUrl && item.cookie?.includes('image-session=fixture')));
-      }
+      assert.equal(imageDownloads.length, 0, 'Capture must use displayed pixels without downloading a new challenge');
     }
     assert.ok(events.includes('captcha_coordinates_applied'));
     await context.close();

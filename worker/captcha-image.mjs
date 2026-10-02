@@ -1,5 +1,6 @@
 import { CaptchaError, requestCaptchaSolution } from './captcha-provider.mjs';
 import { TaskStoppedError, sleep } from './behavior.mjs';
+import { randomUUID } from 'node:crypto';
 
 export async function detectYandexImagePuzzle(page) {
   for (const frame of page.frames()) {
@@ -25,7 +26,7 @@ export async function detectYandexImagePuzzle(page) {
 
 async function renderAtSize(image, { width, height, dataUrl, sourceUrl }) {
   if (dataUrl) {
-    if (!(image instanceof HTMLImageElement) || image.currentSrc !== sourceUrl) throw new Error('Image changed');
+    if ((image.currentSrc ?? '') !== sourceUrl) throw new Error('Image changed');
     image = new Image(); image.src = dataUrl;
   }
   if (image instanceof HTMLImageElement) await image.decode();
@@ -50,25 +51,32 @@ async function captureAtSize(locator, width, height, signal) {
     catch (error) {
       if (!String(error.message).includes('SecurityError')) throw error;
     }
-    // Cross-origin images can be displayed but taint canvas without CORS.
-    // Fetch the original using the context's cookies/proxy, then decode a local
-    // data URL to preserve the source pixels instead of enlarging a screenshot.
+    // Capture the already decoded browser image. Fetching its URL again can
+    // fail or return a different challenge while keeping the same URL.
+    // Render at intrinsic size before capture, rather than enlarging a small
+    // mobile screenshot. Screenshot styles are removed by Playwright.
     signal?.throwIfAborted();
-    const source = await locator.evaluate(image => ({
-      url: image instanceof HTMLImageElement ? image.currentSrc : '', referer: location.href,
+    const source = await locator.evaluate(image => ({ url: image.currentSrc ?? '',
+      width: image.naturalWidth ?? image.width, height: image.naturalHeight ?? image.height,
     }));
-    if (!['http:', 'https:'].includes(new URL(source.url).protocol)) throw new Error('Unsupported image source');
-    const response = await locator.page().request.get(source.url, { headers: { referer: source.referer }, timeout: 10_000 });
+    if (!source.width || !source.height) throw new Error('Image not decoded');
+    const marker = randomUUID();
+    const attribute = 'data-worker-captcha-capture';
+    const previous = await locator.getAttribute(attribute);
+    await locator.evaluate((image, { attribute, marker }) => image.setAttribute(attribute, marker), { attribute, marker });
     try {
-      if (!response.ok()) throw new Error('Image download failed');
-      const contentType = response.headers()['content-type']?.split(';')[0].trim().toLowerCase();
-      if (!contentType?.startsWith('image/')) throw new Error('Invalid image response');
-      const body = await response.body();
+      const body = await locator.screenshot({ type: 'png', scale: 'css', timeout: 5_000,
+        style: `[${attribute}="${marker}"] { position: fixed !important; top: 0 !important; left: 0 !important; right: auto !important; bottom: auto !important; z-index: 2147483647 !important; width: ${source.width}px !important; height: ${source.height}px !important; min-width: 0 !important; min-height: 0 !important; max-width: none !important; max-height: none !important; padding: 0 !important; border: 0 !important; margin: 0 !important; transform: none !important; object-fit: fill !important; }` });
       signal?.throwIfAborted();
-      if (!body.length || body.length > 5_000_000) throw new Error('Invalid image size');
+      if (body.readUInt32BE(16) !== source.width || body.readUInt32BE(20) !== source.height) throw new Error('Image capture size changed');
       return await locator.evaluate(renderAtSize, { width, height, sourceUrl: source.url,
-        dataUrl: `data:${contentType};base64,${body.toString('base64')}` });
-    } finally { await response.dispose(); }
+        dataUrl: `data:image/png;base64,${body.toString('base64')}` });
+    } finally {
+      await locator.evaluate((image, { attribute, previous }) => {
+        if (previous === null) image.removeAttribute(attribute);
+        else image.setAttribute(attribute, previous);
+      }, { attribute, previous }).catch(() => {});
+    }
   } catch {
     signal?.throwIfAborted();
     throw new CaptchaError('image_capture_failed');
