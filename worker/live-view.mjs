@@ -4,7 +4,7 @@ import { projectRoot } from './config.mjs';
 
 const eventNames = new Set(['plan_ready', 'proxy_rotation_started', 'proxy_rotation_wait', 'proxy_rotation_completed', 'session_started', 'session_completed', 'session_failed', 'session_search_missed', 'session_wait', 'action_started', 'action_completed', 'action_skipped', 'action_failed', 'profile_saved', 'search_started', 'search_home_opening', 'search_home_failed', 'search_query_entered', 'search_submit_started', 'search_submit_completed', 'search_page_scanned', 'search_vital_refinement', 'search_target_clicked', 'search_target_not_found', 'target_visit_started', 'target_internal_link', 'target_visit_finished', 'visit_scroll', 'captcha_widget_wait', 'captcha_manual_required', 'captcha_manual_completed', 'captcha_detected', 'captcha_requested', 'captcha_token_received', 'captcha_token_applied', 'captcha_callback_invoked', 'captcha_submitting', 'captcha_submitted', 'captcha_failed', 'captcha_unrecognized']);
 const safeId = value => typeof value === 'string' && /^[a-zA-Z0-9_-]{1,128}$/.test(value);
-for (const event of ['captcha_checkbox_clicked', 'captcha_retrying', 'captcha_coordinates_received', 'captcha_coordinate_applied', 'captcha_coordinates_applied']) eventNames.add(event);
+for (const event of ['captcha_checkbox_clicked', 'captcha_retrying', 'captcha_coordinates_received', 'captcha_coordinate_applied', 'captcha_coordinates_applied', 'captcha_image_ready', 'captcha_image_capture_failed']) eventNames.add(event);
 const hostMatches = (host, allowed) => host === allowed || host.endsWith(`.${allowed}`);
 
 function paths(runId, taskId) {
@@ -26,7 +26,7 @@ function writeEvent(runId, taskId, event, details = {}) {
 export function appendTaskLiveEvent(runId, taskId, event, details = {}) {
   if (!eventNames.has(event)) return;
   const safe = {};
-  for (const key of ['action', 'step', 'total', 'pixels', 'durationMs', 'pagesVisited', 'page', 'organicResults', 'linksFollowed', 'characters', 'engine', 'source', 'errorType', 'code', 'provider', 'attempt', 'method']) {
+  for (const key of ['action', 'step', 'total', 'pixels', 'width', 'height', 'durationMs', 'pagesVisited', 'page', 'organicResults', 'linksFollowed', 'characters', 'engine', 'source', 'errorType', 'code', 'provider', 'attempt', 'method']) {
     const value = details[key];
     if (typeof value === 'number' && Number.isFinite(value)) safe[key] = value;
     else if (typeof value === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(value)) safe[key] = value;

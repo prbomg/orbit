@@ -1,12 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { createCaptchaHandler } from '../worker/captcha-page.mjs';
 import { restrictNavigation } from '../worker/action-executor.mjs';
 import { startCaptchaImageCapture } from '../worker/captcha-image.mjs';
+import { generateMobileProfile, createMobileContext, createMobilePage } from '../worker/profiles.mjs';
 
-for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, submitLabel = 'Continue', autoSubmit = false, clippedParent = false } of [
+for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, submitLabel = 'Continue', autoSubmit = false, clippedParent = false, mobileOS, csp = false, imageMime = 'image/png', captureEnabled = true } of [
   { failures: 0 }, { failures: 1 }, { failures: 3 },
   { failures: 0, crossOrigin: true }, { failures: 0, crossOrigin: true, downloadStatus: 403 },
   { failures: 0, formPost: true },
@@ -15,15 +17,20 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
   { failures: 0, formPost: true, autoSubmit: true },
   { failures: 0, crossOrigin: true, clippedParent: true, downloadStatus: 403 },
   { failures: 1, crossOrigin: true, clippedParent: true, downloadStatus: 403 },
-]) test(`Yandex image solving preserves source detail and bounds retries (${failures} provider failures, cross-origin: ${Boolean(crossOrigin)}, image HTTP ${downloadStatus}, POST: ${formPost}, button: ${submitLabel}, auto-submit: ${autoSubmit}, clipped: ${clippedParent})`, async () => {
+  { failures: 0, crossOrigin: true, mobileOS: 'android' },
+  { failures: 0, crossOrigin: true, mobileOS: 'ios' },
+  { failures: 0, crossOrigin: true, mobileOS: 'android', csp: true },
+  { failures: 0, crossOrigin: true, mobileOS: 'ios', csp: true, imageMime: 'application/octet-stream' },
+  { failures: 0, crossOrigin: true, csp: true, captureEnabled: false },
+]) test(`Yandex image solving preserves source detail and bounds retries (${failures} provider failures, cross-origin: ${Boolean(crossOrigin)}, image HTTP ${downloadStatus}, POST: ${formPost}, button: ${submitLabel}, auto-submit: ${autoSubmit}, clipped: ${clippedParent}, profile: ${mobileOS ?? 'plain'}, CSP: ${csp}, MIME: ${imageMime}, capture: ${captureEnabled})`, async () => {
   const requests = [];
-  const image = (width, height) => `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><pattern id="p" patternUnits="userSpaceOnUse" width="2" height="1"><rect width="2" height="1" fill="white"/><rect width="1" height="1" fill="red"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>`;
+  const image = (width, height) => readFileSync(new URL(`./fixtures/captcha-${width === 320 ? 'main' : 'instruction'}.png`, import.meta.url));
   const imageDownloads = [];
   const provider = createServer((request, response) => {
     if (request.url === '/main.svg' || request.url === '/instruction.svg') {
       imageDownloads.push({ url: request.url, referer: request.headers.referer, cookie: request.headers.cookie });
       response.statusCode = downloadStatus;
-      response.setHeader('content-type', 'image/svg+xml');
+      response.setHeader('content-type', 'image/png');
       response.end(request.url === '/main.svg' ? image(320, 180) : image(480, 80));
       return;
     }
@@ -39,20 +46,25 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
   let browser;
   try {
     browser = await chromium.launch({ headless: true });
-    const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
-    startCaptchaImageCapture(context);
+    const profile = mobileOS ? generateMobileProfile(`captcha-${mobileOS}`, mobileOS) : null;
+    if (profile) profile.canvasSeed = 12345;
+    const context = profile ? await createMobileContext(browser, profile)
+      : await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    const stopCapture = startCaptchaImageCapture(context);
+    if (!captureEnabled) stopCapture();
     const providerUrl = `http://127.0.0.1:${provider.address().port}`;
-    const main = crossOrigin ? `${providerUrl}/main.svg` : `data:image/svg+xml;base64,${Buffer.from(image(320, 180)).toString('base64')}`;
-    const instruction = crossOrigin ? `${providerUrl}/instruction.svg` : `data:image/svg+xml;base64,${Buffer.from(image(480, 80)).toString('base64')}`;
+    const main = crossOrigin ? `${providerUrl}/main.svg` : `data:image/png;base64,${Buffer.from(image(320, 180)).toString('base64')}`;
+    const instruction = crossOrigin ? `${providerUrl}/instruction.svg` : `data:image/png;base64,${Buffer.from(image(480, 80)).toString('base64')}`;
     const challengeUrl = `${crossOrigin ? 'http' : 'https'}://ya.ru/showcaptcha`;
     if (crossOrigin) {
       await context.addCookies([{ name: 'image-session', value: 'fixture', url: providerUrl }]);
       // Fulfill browser loads so private-network restrictions do not obscure
       // the canvas CORS failure. APIRequestContext still uses the real server.
-      await context.route(`${providerUrl}/*.svg`, route => route.fulfill({ contentType: 'image/svg+xml',
+      await context.route(`${providerUrl}/*.svg`, route => route.fulfill({ contentType: imageMime,
         body: route.request().url().endsWith('/main.svg') ? image(320, 180) : image(480, 80) }));
     }
-    await context.route(challengeUrl, route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: `
+    await context.route(challengeUrl, route => route.fulfill({ contentType: 'text/html; charset=utf-8',
+      headers: csp ? { 'Content-Security-Policy': `img-src ${providerUrl}` } : {}, body: `
       <form id="checkbox-captcha-form"><button type="button" role="checkbox" onclick="document.getElementById('puzzle').hidden=false">I'm not a robot</button></form>
       <${formPost ? 'form method="post" action="/captcha-submit"' : 'div'} id="puzzle" hidden>
         <div style="position:relative;width:240px;height:135px;margin:25px;${clippedParent ? 'overflow:hidden;transform:translateZ(0)' : ''}">
@@ -72,7 +84,7 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
       await route.fulfill({ contentType: 'text/html', body: `<script>location.replace('/search/?clicked=1&x=${coordinates.get('x')}&y=${coordinates.get('y')}')</script>` });
     });
     await context.route('**://ya.ru/search/**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Results</h1>' }));
-    const page = await context.newPage();
+    const page = profile ? await createMobilePage(context, profile) : await context.newPage();
     await page.goto(challengeUrl);
     const navigationPolicy = formPost ? await restrictNavigation(context, new URL(challengeUrl).origin) : { clearCaptchaPost() {} };
     if (crossOrigin) {
@@ -83,12 +95,19 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
         try { canvas.toDataURL(); return false; } catch (error) { return error.name === 'SecurityError'; }
       }), true);
     }
-    const events = [];
+    const events = []; const details = [];
     const check = createCaptchaHandler({
       prisma: { settings: { findUnique: async () => ({ rucaptchaApiKey: 'synthetic-key' }) } },
       config: { captchaWidgetWaitMs: 1000, captchaMaxSolves: 3, captchaBaseUrl: `http://127.0.0.1:${provider.address().port}`, captchaV2BaseUrl: `http://127.0.0.1:${provider.address().port}`, captchaPollingMs: 50, captchaTimeoutMs: 5000, navigationTimeoutMs: 2000 },
-      shouldContinue: async () => true, taskId: 'fixture', log: event => events.push(event), navigationPolicy,
+      shouldContinue: async () => true, taskId: 'fixture', log: (event, data) => { events.push(event); details.push({ event, ...data }); }, navigationPolicy,
     });
+    if (!captureEnabled) {
+      await assert.rejects(check(page), error => error.code === 'image_capture_failed');
+      assert.equal(requests.length, 0);
+      assert.ok(details.some(item => item.event === 'captcha_image_capture_failed' && item.code === 'original_response_missing' && item.source === 'main'));
+      await context.close();
+      return;
+    }
     if (failures >= 3) {
       await assert.rejects(check(page), error => error.code === 'solve_limit');
       assert.equal(requests.length, 3);

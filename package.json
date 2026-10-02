@@ -14,6 +14,7 @@
     "db:setup": "node --env-file=.env scripts/ensure-sqlite.mjs && prisma generate && prisma migrate deploy",
     "test:api": "node --env-file=.env --test tests/api.test.mjs tests/projects-api.test.mjs",
     "test:architecture": "node --test tests/project-migration.test.mjs tests/task-architecture.test.mjs",
+    "test:captcha": "node --test tests/captcha-provider.test.mjs tests/captcha-image.test.mjs tests/captcha-direct.test.mjs tests/captcha-diagnostics.test.mjs tests/live-view.test.mjs",
     "worker": "node worker/index.js",
     "worker:once": "node worker/index.js --once",
     "worker:install": "playwright install chromium",

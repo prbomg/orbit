@@ -57,49 +57,69 @@ export async function detectYandexImagePuzzle(page) {
   return null;
 }
 
-async function renderAtSize(image, { width, height, dataUrl, sourceUrl }) {
-  if (dataUrl) {
-    if ((image.currentSrc ?? '') !== sourceUrl) throw new Error('Image changed');
-    image = new Image(); image.src = dataUrl;
-  }
-  if (image instanceof HTMLImageElement) await image.decode();
-  const sourceWidth = image.naturalWidth ?? image.width;
-  const sourceHeight = image.naturalHeight ?? image.height;
-  if (!sourceWidth || !sourceHeight) throw new Error('Image not decoded');
-  const canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height;
-  const context = canvas.getContext('2d');
-  context.fillStyle = '#303035'; context.fillRect(0, 0, width, height);
-  const scale = Math.min(width / sourceWidth, height / sourceHeight);
-  const renderedWidth = sourceWidth * scale; const renderedHeight = sourceHeight * scale;
-  context.drawImage(image, (width - renderedWidth) / 2, (height - renderedHeight) / 2, renderedWidth, renderedHeight);
-  return canvas.toDataURL('image/png').split(',')[1];
+async function renderAtSize(image, { width, height, base64, contentType, sourceUrl }) {
+  if (sourceUrl !== undefined && (image.currentSrc ?? '') !== sourceUrl) throw new Error('Image changed');
+  let source = image;
+  if (base64) {
+    const bytes = Uint8Array.from(atob(base64), char => char.charCodeAt(0));
+    source = new Blob([bytes], { type: contentType });
+  } else if (image instanceof HTMLImageElement) await image.decode();
+  // Decode bytes directly; creating an Image with a data URL would be blocked
+  // by the challenge's img-src CSP. OffscreenCanvas also avoids profile noise.
+  const bitmap = await createImageBitmap(source);
+  try {
+    const canvas = new OffscreenCanvas(width, height);
+    const context = canvas.getContext('2d');
+    context.fillStyle = '#303035'; context.fillRect(0, 0, width, height);
+    const scale = Math.min(width / bitmap.width, height / bitmap.height);
+    const renderedWidth = bitmap.width * scale; const renderedHeight = bitmap.height * scale;
+    context.drawImage(bitmap, (width - renderedWidth) / 2, (height - renderedHeight) / 2, renderedWidth, renderedHeight);
+    const blob = await canvas.convertToBlob({ type: 'image/png' });
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result.split(',')[1]);
+      reader.onerror = () => reject(new Error('PNG encoding failed'));
+      reader.readAsDataURL(blob);
+    });
+  } finally { bitmap.close(); }
 }
 
-async function captureAtSize(locator, width, height, signal, frame) {
+async function captureAtSize(locator, width, height, signal, frame, { log, taskId, sourceName }) {
+  let reason = 'browser_image_decode';
   try {
-    // Draw the decoded source at its intrinsic resolution. A screenshot of the
-    // instruction strip can be only 120×20 CSS pixels on mobile; enlarging that
-    // screenshot loses the shapes the solver needs to distinguish.
-    try { return await locator.evaluate(renderAtSize, { width, height }); }
+    signal?.throwIfAborted();
+    let base64; let method = 'browser_bitmap';
+    try { base64 = await locator.evaluate(renderAtSize, { width, height }); }
     catch (error) {
-      if (!String(error.message).includes('SecurityError')) throw error;
+      if (!/SecurityError|tainted|origin.clean/i.test(String(error.message))) throw error;
     }
-    // Read the exact HTTP response used by this document. Re-requesting the
-    // URL can return a different puzzle. Resizing the live element for a
-    // screenshot can clip it inside transformed/overflow-hidden containers.
+    if (!base64) {
+      // Read the exact response used by this document, never refetch a URL or
+      // resize the live element. Decode a Blob, which needs no data URL access.
+      method = 'network_bitmap';
+      reason = 'image_source_read';
+      const source = await locator.evaluate(image => ({ url: image.currentSrc ?? '' }));
+      reason = 'original_response_missing';
+      const response = capturedImages.get(locator.page().context())?.get(frame)?.get(source.url);
+      if (!response) throw new Error('Original image response unavailable');
+      const headerType = response.headers()['content-type']?.split(';')[0].trim().toLowerCase();
+      // Browser image decoders can recognize raster bytes even when the server
+      // uses application/octet-stream. Do not reject an already displayed PNG.
+      const contentType = headerType?.startsWith('image/') ? headerType : 'application/octet-stream';
+      reason = 'original_response_body';
+      const body = await response.body();
+      signal?.throwIfAborted();
+      if (!body.length || body.length > 5_000_000) throw new Error('Invalid image size');
+      reason = 'original_image_decode';
+      base64 = await locator.evaluate(renderAtSize, { width, height, sourceUrl: source.url,
+        contentType, base64: body.toString('base64') });
+    }
     signal?.throwIfAborted();
-    const source = await locator.evaluate(image => ({ url: image.currentSrc ?? '' }));
-    const response = capturedImages.get(locator.page().context())?.get(frame)?.get(source.url);
-    if (!response) throw new Error('Original image response unavailable');
-    const contentType = response.headers()['content-type']?.split(';')[0].trim().toLowerCase();
-    if (!contentType?.startsWith('image/')) throw new Error('Invalid image response');
-    const body = await response.body();
-    signal?.throwIfAborted();
-    if (!body.length || body.length > 5_000_000) throw new Error('Invalid image size');
-    return await locator.evaluate(renderAtSize, { width, height, sourceUrl: source.url,
-      dataUrl: `data:${contentType};base64,${body.toString('base64')}` });
+    log('captcha_image_ready', { taskId, source: sourceName, method, width, height });
+    return base64;
   } catch {
     signal?.throwIfAborted();
+    log('captcha_image_capture_failed', { taskId, source: sourceName, code: reason });
     throw new CaptchaError('image_capture_failed');
   }
 }
@@ -110,8 +130,8 @@ export async function solveYandexImagePuzzle(page, puzzle, { prisma, config, sig
   const settings = await prisma.settings.findUnique({ where: { id: 1 }, select: { rucaptchaApiKey: true } });
   if (!settings?.rucaptchaApiKey) throw new CaptchaError('missing_api_key');
   const originalUrl = page.url();
-  const image = await captureAtSize(puzzle.main, 320, 180, signal, puzzle.frame);
-  const imgInstructions = await captureAtSize(puzzle.instruction, 480, 180, signal, puzzle.frame);
+  const image = await captureAtSize(puzzle.main, 320, 180, signal, puzzle.frame, { log, taskId, sourceName: 'main' });
+  const imgInstructions = await captureAtSize(puzzle.instruction, 480, 180, signal, puzzle.frame, { log, taskId, sourceName: 'instruction' });
   log('captcha_requested', { taskId, provider: 'smartcaptcha_image' });
   const solution = await requestCaptchaSolution({ apiKey: settings.rucaptchaApiKey, type: 'smartcaptcha_image',
     params: { image, imgInstructions }, config, signal, shouldContinue });

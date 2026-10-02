@@ -5,9 +5,11 @@ import { ArrowLeft, ExternalLink, Eye, RefreshCw } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-type Event = { time: string; event: string; url?: string; tab?: number; status?: number; action?: string; method?: string; step?: number; attempt?: number; total?: number; durationMs?: number; errorType?: string; code?: string; pagesVisited?: number; page?: number; organicResults?: number; linksFollowed?: number };
+type Event = { time: string; event: string; url?: string; tab?: number; status?: number; action?: string; method?: string; source?: string; width?: number; height?: number; step?: number; attempt?: number; total?: number; durationMs?: number; errorType?: string; code?: string; pagesVisited?: number; page?: number; organicResults?: number; linksFollowed?: number };
 type Snapshot = { task: { status: string; currentExecutions: number; targetExecutions: number }; run: { state: string; active: boolean; currentTaskId: string | null; updatedAt: string | null }; events: Event[]; imageVersion: number | null };
 const names: Record<string, string> = {
+  captcha_image_ready: "Изображение подготовлено",
+  captcha_image_capture_failed: "Не удалось подготовить изображение",
   captcha_retrying: "Повторная попытка решения капчи",
   captcha_coordinate_applied: "Нажатие по координатам RuCaptcha выполнено",
   navigation: "Переход", navigation_response: "Ответ сайта", plan_ready: "План действий готов", proxy_rotation_started: "Смена IP началась", proxy_rotation_completed: "IP сменён",
@@ -17,8 +19,12 @@ const names: Record<string, string> = {
 };
 const actionNames: Record<string, string> = { scroll_down: "Прокрутка вниз", scroll_up: "Прокрутка вверх", pause: "Пауза", move_mouse_randomly: "Движение мыши", click_random_link: "Клик по ссылке" };
 const errorNames: Record<string, string> = { ProxyCheckError: "Прокси не смог открыть сайт", ProxyRotationError: "Не удалось сменить IP", SearchError: "Ошибка поиска", TaskStoppedError: "Задача остановлена", CaptchaError: "Ошибка обработки капчи" };
-const codeNames: Record<string, string> = { missing_api_key: "ключ RuCaptcha не задан", widget_not_detected: "параметры виджета не найдены", sitekey_missing: "sitekey не найден", search_home_timeout: "поисковик не открылся через прокси", ERROR_CAPTCHA_UNSOLVABLE: "RuCaptcha не смогла распознать задание", solve_limit: "лимит попыток решения капчи исчерпан", image_capture_failed: "не удалось получить изображение в исходном разрешении", captcha_reload_failed: "не удалось обновить страницу проверки" };
+const codeNames: Record<string, string> = { browser_image_decode: "браузер не смог декодировать изображение", image_source_read: "источник изображения недоступен", original_response_missing: "исходный ответ изображения не найден", original_response_type: "сервер вернул неподдерживаемый формат", original_response_body: "не удалось прочитать исходные байты изображения", original_image_decode: "не удалось обработать байты изображения", submission_rejected: "Яндекс вернул страницу проверки после отправки", ERROR_ZERO_BALANCE: "на счёте RuCaptcha недостаточно средств", ERROR_WRONG_USER_KEY: "неверный формат ключа RuCaptcha", ERROR_KEY_DOES_NOT_EXIST: "ключ RuCaptcha не найден", missing_api_key: "ключ RuCaptcha не задан", widget_not_detected: "параметры виджета не найдены", sitekey_missing: "sitekey не найден", search_home_timeout: "поисковик не открылся через прокси", ERROR_CAPTCHA_UNSOLVABLE: "RuCaptcha не смогла распознать задание", solve_limit: "лимит попыток решения капчи исчерпан", image_capture_failed: "не удалось получить изображение в исходном разрешении", captcha_reload_failed: "не удалось обновить страницу проверки" };
 const eventLabel = (event: Event) => {
+  if (event.event === "captcha_image_ready" || event.event === "captcha_image_capture_failed") {
+    const image = event.source === "instruction" ? "Инструкция" : "Основная картинка";
+    return event.event === "captcha_image_ready" ? `${image} получена · ${event.width}×${event.height}` : `${image}: ошибка получения`;
+  }
   if (event.event === "captcha_retrying") return `Повторная попытка решения капчи ${event.attempt ?? ""}${event.total ? `/${event.total}` : ""}`;
   if (event.event === "captcha_coordinate_applied") return `Нажатие по координатам ${event.step ?? ""}${event.total ? `/${event.total}` : ""}`;
   if (event.event === "search_submit_started") return event.method === "button" ? "Нажатие кнопки «Найти»" : "Отправка через Enter";

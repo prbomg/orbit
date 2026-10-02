@@ -1,8 +1,10 @@
 import Captcha from '2captcha';
 
+const safeCode = code => typeof code === 'string' && /^[A-Z_0-9]{1,80}$/.test(code) ? code : null;
+
 function providerError(code) {
   const error = new Error('Captcha provider request failed');
-  error.code = /^[A-Z_0-9]{1,80}$/.test(code ?? '') ? code : 'provider_error';
+  error.code = safeCode(code) ?? 'provider_error';
   return error;
 }
 
@@ -60,6 +62,7 @@ process.once('message', async ({ apiKey, baseUrl, v2BaseUrl, pollingMs, type, pa
     process.send({ ok: true, solution }, () => process.disconnect());
   } catch (error) {
     // Never forward provider exceptions: some include the key or request URL.
-    process.send({ ok: false, code: /^[A-Z_0-9]{1,80}$/.test(error.code ?? '') ? error.code : 'provider_error' }, () => process.disconnect());
+    // The v1 SDK uses numeric .code and keeps the provider string in .err.
+    process.send({ ok: false, code: safeCode(error.code) ?? safeCode(error.err) ?? 'provider_error' }, () => process.disconnect());
   }
 });
