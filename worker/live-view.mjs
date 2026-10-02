@@ -26,7 +26,7 @@ function writeEvent(runId, taskId, event, details = {}) {
 export function appendTaskLiveEvent(runId, taskId, event, details = {}) {
   if (!eventNames.has(event)) return;
   const safe = {};
-  for (const key of ['action', 'step', 'total', 'pixels', 'width', 'height', 'durationMs', 'pagesVisited', 'page', 'organicResults', 'linksFollowed', 'characters', 'engine', 'source', 'errorType', 'code', 'provider', 'attempt', 'method']) {
+  for (const key of ['action', 'step', 'total', 'pixels', 'width', 'height', 'durationMs', 'pagesVisited', 'page', 'organicResults', 'linksFollowed', 'characters', 'engine', 'source', 'element', 'sourceType', 'captureState', 'capturedResponses', 'errorType', 'code', 'provider', 'attempt', 'method']) {
     const value = details[key];
     if (typeof value === 'number' && Number.isFinite(value)) safe[key] = value;
     else if (typeof value === 'string' && /^[a-zA-Z0-9_-]{1,80}$/.test(value)) safe[key] = value;

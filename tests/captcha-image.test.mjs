@@ -105,6 +105,7 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
       await assert.rejects(check(page), error => error.code === 'image_capture_failed');
       assert.equal(requests.length, 0);
       assert.ok(details.some(item => item.event === 'captcha_image_capture_failed' && item.code === 'original_response_missing' && item.source === 'main'));
+      assert.ok(details.some(item => item.event === 'captcha_image_capture_failed' && item.element === 'img' && item.sourceType === 'http' && item.captureState === 'disabled' && item.capturedResponses === 0));
       await context.close();
       return;
     }

@@ -3,25 +3,47 @@ import { TaskStoppedError, sleep } from './behavior.mjs';
 // Keep responses from the current document, never refetch a challenge URL.
 const capturedImages = new WeakMap();
 
+function imageUrl(value) {
+  try {
+    const url = new URL(value);
+    url.hash = ''; // Fragments are present in currentSrc, but not in HTTP requests.
+    return url.href;
+  } catch { return value; }
+}
+
 export function startCaptchaImageCapture(context) {
   const frames = new WeakMap();
   capturedImages.set(context, frames);
   const pages = new Set();
-  const navigated = frame => frames.delete(frame);
+  const detached = frame => frames.delete(frame);
   const attach = page => {
     pages.add(page);
-    page.on('framenavigated', navigated);
+    page.on('framedetached', detached);
   };
   const receive = response => {
     try {
-      if (response.request().resourceType() !== 'image' || !response.ok()) return;
+      const request = response.request();
+      if (request.isNavigationRequest()) {
+        // Navigation headers arrive before the new document's images. The
+        // framenavigated event also fires for history/hash changes, which must
+        // preserve responses belonging to the still-loaded document.
+        if (response.status() >= 200 && (response.status() < 300 || response.status() >= 400)
+            && ![204, 205].includes(response.status())
+            && !/attachment/i.test(response.headers()['content-disposition'] ?? '')) frames.delete(response.frame());
+        return;
+      }
+      if (request.resourceType() !== 'image' || !response.ok()) return;
       const frame = response.frame();
       let images = frames.get(frame);
       if (!images) { images = new Map(); frames.set(frame, images); }
       // Store only response handles; read bytes only for a detected puzzle.
-      images.delete(response.url());
-      images.set(response.url(), response);
-      if (images.size > 32) images.delete(images.keys().next().value);
+      // currentSrc keeps the originally requested URL even after HTTP redirects.
+      // Keep every alias pointing to the final response, including redirect chains.
+      for (let source = request; source; source = source.redirectedFrom()) {
+        images.set(imageUrl(source.url()), response);
+      }
+      // Retain handles for this document, including images loaded before icons.
+      // Reading no bodies here keeps capture cheap; document changes clear them.
     } catch { /* Detached frame or unavailable response. */ }
   };
   context.on('response', receive);
@@ -30,7 +52,7 @@ export function startCaptchaImageCapture(context) {
   return () => {
     context.off('response', receive);
     context.off('page', attach);
-    for (const page of pages) page.off('framenavigated', navigated);
+    for (const page of pages) page.off('framedetached', detached);
     capturedImages.delete(context);
   };
 }
@@ -86,6 +108,7 @@ async function renderAtSize(image, { width, height, base64, contentType, sourceU
 
 async function captureAtSize(locator, width, height, signal, frame, { log, taskId, sourceName }) {
   let reason = 'browser_image_decode';
+  let diagnostic = {};
   try {
     signal?.throwIfAborted();
     let base64; let method = 'browser_bitmap';
@@ -98,9 +121,14 @@ async function captureAtSize(locator, width, height, signal, frame, { log, taskI
       // resize the live element. Decode a Blob, which needs no data URL access.
       method = 'network_bitmap';
       reason = 'image_source_read';
-      const source = await locator.evaluate(image => ({ url: image.currentSrc ?? '' }));
+      const source = await locator.evaluate(image => ({ url: image.currentSrc ?? '', element: image.tagName.toLowerCase() }));
       reason = 'original_response_missing';
-      const response = capturedImages.get(locator.page().context())?.get(frame)?.get(source.url);
+      const frames = capturedImages.get(locator.page().context());
+      const images = frames?.get(frame);
+      const scheme = source.url.split(':', 1)[0];
+      diagnostic = { element: source.element, sourceType: ['http', 'https', 'blob', 'data'].includes(scheme) ? scheme : source.url ? 'other' : 'none',
+        captureState: frames ? 'active' : 'disabled', capturedResponses: new Set(images?.values()).size };
+      const response = images?.get(imageUrl(source.url));
       if (!response) throw new Error('Original image response unavailable');
       const headerType = response.headers()['content-type']?.split(';')[0].trim().toLowerCase();
       // Browser image decoders can recognize raster bytes even when the server
@@ -119,7 +147,7 @@ async function captureAtSize(locator, width, height, signal, frame, { log, taskI
     return base64;
   } catch {
     signal?.throwIfAborted();
-    log('captcha_image_capture_failed', { taskId, source: sourceName, code: reason });
+    log('captcha_image_capture_failed', { taskId, source: sourceName, code: reason, ...diagnostic });
     throw new CaptchaError('image_capture_failed');
   }
 }
