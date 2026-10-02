@@ -233,9 +233,18 @@ async function internalLinks(page, domain, visited) {
       try {
         const url = new URL(a.href); const rect = a.getBoundingClientRect();
         if (!['http:', 'https:'].includes(url.protocol) || url.username || url.password || a.hasAttribute('download') ||
-            !(url.hostname === domain || url.hostname.endsWith(`.${domain}`)) || visited.includes(url.href) ||
+            !(url.hostname === domain || url.hostname.endsWith(`.${domain}`)) || visited.includes(url.href.split('#')[0]) ||
             /(?:logout|signout|delete|remove|checkout|purchase|payment|unsubscribe)/i.test(decodeURIComponent(url.pathname + url.search)) ||
+            /\.(?:pdf|docx?|xlsx?|pptx?|odt|ods|odp|rtf|csv|zip|rar|7z|tar|gz|png|jpe?g|gif|webp|svg|ico|mp[34]|wav|webm|avi|exe|dmg)$/i.test(url.pathname) ||
+            a.closest('[hidden], [inert], [aria-hidden="true"], [aria-disabled="true"], [role="button"], [aria-haspopup="dialog"]') ||
             !rect.width || !rect.height || getComputedStyle(a).visibility !== 'visible' || url.href.split('#')[0] === location.href.split('#')[0]) continue;
+        // Closed popups can retain a nonzero box and visibility:visible.
+        let hidden = false;
+        for (let element = a; element; element = element.parentElement) {
+          const style = getComputedStyle(element);
+          if (style.opacity === '0' || style.pointerEvents === 'none') { hidden = true; break; }
+        }
+        if (hidden) continue;
         const token = `${marker}-${links.length}`; a.setAttribute('data-worker-internal', token);
         links.push({ token, href: url.href });
       } catch { /* Skip non-navigation links. */ }
@@ -244,10 +253,68 @@ async function internalLinks(page, domain, visited) {
   }, { domain, visited, marker });
 }
 
+async function followInternalLink(page, link, session, domain) {
+  const before = page.url();
+  const actionTimeout = Math.min(3000, session.timeout);
+  let requested = false; let committed = false; let failed = false;
+  const isDocument = request => request.isNavigationRequest() && request.frame() === page.mainFrame();
+  const onRequest = request => { if (isDocument(request)) requested = true; };
+  const onFailure = request => { if (isDocument(request)) failed = true; };
+  const onNavigation = frame => { if (frame === page.mainFrame()) committed = true; };
+  const skip = code => { session.log('target_internal_link_skipped', { code }); return false; };
+  page.on('request', onRequest); page.on('requestfailed', onFailure); page.on('framenavigated', onNavigation);
+  try {
+    session.log('target_internal_link_started');
+    await session.check(page);
+    const anchor = page.locator(`[data-worker-internal="${link.token}"]`);
+    try {
+      const href = await anchor.evaluate(a => { const href = a.href; a.target = '_self'; return href; }, undefined, { timeout: actionTimeout });
+      if (href !== link.href) return skip('internal_link_changed');
+      // Bound actionability separately: a covered link is optional, a failed document is not.
+      await anchor.click({ timeout: actionTimeout, noWaitAfter: true });
+    } catch (error) {
+      await session.check(page);
+      if (error.name !== 'TimeoutError') throw error;
+      if (!requested && !committed && page.url() === before) return skip('target_internal_link_unavailable');
+    }
+    const started = performance.now();
+    while (!requested && !committed && page.url() === before && performance.now() - started < actionTimeout) {
+      await session.check(page);
+      await sleep(Math.min(100, Math.max(1, actionTimeout - (performance.now() - started))), session.signal);
+    }
+    if (!requested && !committed && page.url() === before) return skip('target_internal_no_navigation');
+    session.log('target_internal_navigation_started');
+    const deadline = performance.now() + session.timeout;
+    while (!committed && page.url() === before) {
+      await session.check(page);
+      if (failed) throw new SearchError('target_internal_navigation_failed');
+      if (performance.now() >= deadline) throw new SearchError('target_internal_navigation_timeout');
+      await sleep(Math.min(100, Math.max(1, deadline - performance.now())), session.signal);
+    }
+    if (failed) throw new SearchError('target_internal_navigation_failed');
+    try { await page.waitForLoadState('domcontentloaded', { timeout: Math.max(1, deadline - performance.now()) }); }
+    catch (error) {
+      await session.check(page);
+      if (error.name === 'TimeoutError') throw new SearchError('target_internal_navigation_timeout');
+      throw error;
+    }
+    if (failed) throw new SearchError('target_internal_navigation_failed');
+    await session.document(page);
+    if (!domainMatches(new URL(page.url()).hostname, domain)) throw new SearchError('target_domain_changed');
+    if (page.url().split('#')[0] === before.split('#')[0]) return skip('target_internal_no_navigation');
+    return true;
+  } catch (error) {
+    session.log('target_internal_link_failed', { errorType: error.name, ...(error instanceof SearchError ? { code: error.code } : {}) });
+    throw error;
+  } finally {
+    page.off('request', onRequest); page.off('requestfailed', onFailure); page.off('framenavigated', onNavigation);
+  }
+}
+
 /** Keep the final visit on the target domain for a total of 1–5 minutes. */
 export async function interactWithTargetSite(page, config, session, { durationMs = randomInt(60_000, 300_000) } = {}) {
   const end = session.now() + durationMs;
-  const visited = [page.url()]; const depth = randomInt(1, 2);
+  const attempted = new Set([page.url().split('#')[0]]); const depth = randomInt(1, 2);
   let linksFollowed = 0;
   session.log('target_visit_started', { durationMs, domain: config.targetDomain });
   while (session.now() < end) {
@@ -255,15 +322,13 @@ export async function interactWithTargetSite(page, config, session, { durationMs
     if (!domainMatches(new URL(page.url()).hostname, config.targetDomain)) throw new SearchError('target_domain_changed');
     await scrollAndMove(page, session, true);
     if (linksFollowed < depth && session.now() < end - 3000) {
-      const links = await internalLinks(page, config.targetDomain, visited);
+      const links = await internalLinks(page, config.targetDomain, [...attempted]);
       if (links.length) {
-        const link = choose(links); const anchor = page.locator(`[data-worker-internal="${link.token}"]`);
-        if (await anchor.evaluate(a => a.href) !== link.href) throw new SearchError('internal_link_changed');
-        await anchor.evaluate(a => { a.target = '_self'; });
-        const before = page.url();
-        await Promise.all([page.waitForURL(url => url.href !== before, { waitUntil: 'domcontentloaded', timeout: session.timeout }), anchor.click({ timeout: session.timeout })]);
-        await session.document(page); visited.push(page.url()); linksFollowed++;
-        session.log('target_internal_link', { linksFollowed });
+        const link = choose(links); attempted.add(link.href.split('#')[0]);
+        if (await followInternalLink(page, link, session, config.targetDomain)) {
+          attempted.add(page.url().split('#')[0]); linksFollowed++;
+          session.log('target_internal_link', { linksFollowed });
+        }
       }
     }
     await session.pause(Math.min(randomInt(2500, 6500), Math.max(0, end - session.now())), page);
@@ -335,7 +400,7 @@ export async function performSearchAndClick(page, task, {
   const popupListener = child => { children.add(child); };
   const abort = () => { for (const child of [page, ...children]) void child.close().catch(() => {}); };
   const session = {
-    check, document, timeout: navigationTimeoutMs, searchDomains: engine.domains, now,
+    check, document, timeout: navigationTimeoutMs, searchDomains: engine.domains, now, signal,
     log: (event, data = {}) => log(event, { taskId: task.id, ...data }),
     setOutbound: domain => { outboundDomain = domain; },
     pause: async (ms, child = page) => {
