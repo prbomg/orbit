@@ -18,7 +18,7 @@
     "worker": "node worker/index.js",
     "worker:once": "node worker/index.js --once",
     "worker:install": "playwright install chromium",
-    "test:worker": "node --test tests/worker.test.mjs tests/profiles.test.mjs tests/warmup.test.mjs tests/search.test.mjs"
+    "test:worker": "node --test tests/worker.test.mjs tests/profiles.test.mjs tests/warmup.test.mjs tests/search.test.mjs tests/target-visit.test.mjs"
   },
   "dependencies": {
     "2captcha": "npm:@2captcha/captcha-solver@^1.3.9",

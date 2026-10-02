@@ -29,6 +29,10 @@ test('live observation records allowed top-level transitions and captures a fram
     appendTaskLiveEvent(runId, taskId, 'captcha_coordinate_applied', { step: 1, total: 5, method: 'touch', token: 'secret' });
     appendTaskLiveEvent(runId, taskId, 'captcha_image_ready', { source: 'instruction', width: 480, height: 180, method: 'network_bitmap', image: 'secret' });
     appendTaskLiveEvent(runId, taskId, 'captcha_image_capture_failed', { source: 'main', code: 'original_response_missing', element: 'img', sourceType: 'https', captureState: 'active', capturedResponses: 2, url: 'https://image.invalid/?token=secret', error: 'secret' });
+    appendTaskLiveEvent(runId, taskId, 'target_internal_link_started', { url: `${url}/next?token=secret` });
+    appendTaskLiveEvent(runId, taskId, 'target_internal_navigation_started');
+    appendTaskLiveEvent(runId, taskId, 'target_internal_link_skipped', { code: 'target_internal_no_navigation', href: `${url}/next?token=secret` });
+    appendTaskLiveEvent(runId, taskId, 'target_internal_link_failed', { errorType: 'SearchError', code: 'target_internal_navigation_timeout', message: 'secret' });
     await assert.doesNotReject(async () => {
       for (let i = 0; i < 30; i++) {
         try { await stat(resolve(directory, `${taskId}.jpg`)); return; }
@@ -46,6 +50,10 @@ test('live observation records allowed top-level transitions and captures a fram
     assert.ok(parsed.some(event => event.event === 'captcha_image_ready' && event.width === 480 && event.height === 180));
     assert.ok(parsed.some(event => event.event === 'captcha_image_capture_failed' && event.source === 'main' && event.code === 'original_response_missing'));
     assert.ok(parsed.some(event => event.event === 'captcha_image_capture_failed' && event.element === 'img' && event.sourceType === 'https' && event.captureState === 'active' && event.capturedResponses === 2));
+    assert.ok(parsed.some(event => event.event === 'target_internal_link_started'));
+    assert.ok(parsed.some(event => event.event === 'target_internal_navigation_started'));
+    assert.ok(parsed.some(event => event.event === 'target_internal_link_skipped' && event.code === 'target_internal_no_navigation'));
+    assert.ok(parsed.some(event => event.event === 'target_internal_link_failed' && event.code === 'target_internal_navigation_timeout'));
     assert.doesNotMatch(events, /secret|password|token=/);
   } finally {
     stop();
