@@ -1,6 +1,39 @@
 import { CaptchaError, requestCaptchaSolution } from './captcha-provider.mjs';
 import { TaskStoppedError, sleep } from './behavior.mjs';
-import { randomUUID } from 'node:crypto';
+// Keep responses from the current document, never refetch a challenge URL.
+const capturedImages = new WeakMap();
+
+export function startCaptchaImageCapture(context) {
+  const frames = new WeakMap();
+  capturedImages.set(context, frames);
+  const pages = new Set();
+  const navigated = frame => frames.delete(frame);
+  const attach = page => {
+    pages.add(page);
+    page.on('framenavigated', navigated);
+  };
+  const receive = response => {
+    try {
+      if (response.request().resourceType() !== 'image' || !response.ok()) return;
+      const frame = response.frame();
+      let images = frames.get(frame);
+      if (!images) { images = new Map(); frames.set(frame, images); }
+      // Store only response handles; read bytes only for a detected puzzle.
+      images.delete(response.url());
+      images.set(response.url(), response);
+      if (images.size > 32) images.delete(images.keys().next().value);
+    } catch { /* Detached frame or unavailable response. */ }
+  };
+  context.on('response', receive);
+  context.on('page', attach);
+  for (const page of context.pages()) attach(page);
+  return () => {
+    context.off('response', receive);
+    context.off('page', attach);
+    for (const page of pages) page.off('framenavigated', navigated);
+    capturedImages.delete(context);
+  };
+}
 
 export async function detectYandexImagePuzzle(page) {
   for (const frame of page.frames()) {
@@ -42,7 +75,7 @@ async function renderAtSize(image, { width, height, dataUrl, sourceUrl }) {
   return canvas.toDataURL('image/png').split(',')[1];
 }
 
-async function captureAtSize(locator, width, height, signal) {
+async function captureAtSize(locator, width, height, signal, frame) {
   try {
     // Draw the decoded source at its intrinsic resolution. A screenshot of the
     // instruction strip can be only 120×20 CSS pixels on mobile; enlarging that
@@ -51,32 +84,20 @@ async function captureAtSize(locator, width, height, signal) {
     catch (error) {
       if (!String(error.message).includes('SecurityError')) throw error;
     }
-    // Capture the already decoded browser image. Fetching its URL again can
-    // fail or return a different challenge while keeping the same URL.
-    // Render at intrinsic size before capture, rather than enlarging a small
-    // mobile screenshot. Screenshot styles are removed by Playwright.
+    // Read the exact HTTP response used by this document. Re-requesting the
+    // URL can return a different puzzle. Resizing the live element for a
+    // screenshot can clip it inside transformed/overflow-hidden containers.
     signal?.throwIfAborted();
-    const source = await locator.evaluate(image => ({ url: image.currentSrc ?? '',
-      width: image.naturalWidth ?? image.width, height: image.naturalHeight ?? image.height,
-    }));
-    if (!source.width || !source.height) throw new Error('Image not decoded');
-    const marker = randomUUID();
-    const attribute = 'data-worker-captcha-capture';
-    const previous = await locator.getAttribute(attribute);
-    await locator.evaluate((image, { attribute, marker }) => image.setAttribute(attribute, marker), { attribute, marker });
-    try {
-      const body = await locator.screenshot({ type: 'png', scale: 'css', timeout: 5_000,
-        style: `[${attribute}="${marker}"] { position: fixed !important; top: 0 !important; left: 0 !important; right: auto !important; bottom: auto !important; z-index: 2147483647 !important; width: ${source.width}px !important; height: ${source.height}px !important; min-width: 0 !important; min-height: 0 !important; max-width: none !important; max-height: none !important; padding: 0 !important; border: 0 !important; margin: 0 !important; transform: none !important; object-fit: fill !important; }` });
-      signal?.throwIfAborted();
-      if (body.readUInt32BE(16) !== source.width || body.readUInt32BE(20) !== source.height) throw new Error('Image capture size changed');
-      return await locator.evaluate(renderAtSize, { width, height, sourceUrl: source.url,
-        dataUrl: `data:image/png;base64,${body.toString('base64')}` });
-    } finally {
-      await locator.evaluate((image, { attribute, previous }) => {
-        if (previous === null) image.removeAttribute(attribute);
-        else image.setAttribute(attribute, previous);
-      }, { attribute, previous }).catch(() => {});
-    }
+    const source = await locator.evaluate(image => ({ url: image.currentSrc ?? '' }));
+    const response = capturedImages.get(locator.page().context())?.get(frame)?.get(source.url);
+    if (!response) throw new Error('Original image response unavailable');
+    const contentType = response.headers()['content-type']?.split(';')[0].trim().toLowerCase();
+    if (!contentType?.startsWith('image/')) throw new Error('Invalid image response');
+    const body = await response.body();
+    signal?.throwIfAborted();
+    if (!body.length || body.length > 5_000_000) throw new Error('Invalid image size');
+    return await locator.evaluate(renderAtSize, { width, height, sourceUrl: source.url,
+      dataUrl: `data:${contentType};base64,${body.toString('base64')}` });
   } catch {
     signal?.throwIfAborted();
     throw new CaptchaError('image_capture_failed');
@@ -89,8 +110,8 @@ export async function solveYandexImagePuzzle(page, puzzle, { prisma, config, sig
   const settings = await prisma.settings.findUnique({ where: { id: 1 }, select: { rucaptchaApiKey: true } });
   if (!settings?.rucaptchaApiKey) throw new CaptchaError('missing_api_key');
   const originalUrl = page.url();
-  const image = await captureAtSize(puzzle.main, 320, 180, signal);
-  const imgInstructions = await captureAtSize(puzzle.instruction, 480, 180, signal);
+  const image = await captureAtSize(puzzle.main, 320, 180, signal, puzzle.frame);
+  const imgInstructions = await captureAtSize(puzzle.instruction, 480, 180, signal, puzzle.frame);
   log('captcha_requested', { taskId, provider: 'smartcaptcha_image' });
   const solution = await requestCaptchaSolution({ apiKey: settings.rucaptchaApiKey, type: 'smartcaptcha_image',
     params: { image, imgInstructions }, config, signal, shouldContinue });

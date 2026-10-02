@@ -14,6 +14,7 @@ import searchTasks from '../utils/searchTask.js';
 import taskLifecycle from '../utils/taskLifecycle.js';
 import { restrictOwnedNavigation } from './owned-navigation.mjs';
 import { startLiveView } from './live-view.mjs';
+import { startCaptchaImageCapture } from './captcha-image.mjs';
 
 const stealth = StealthPlugin();
 // FingerprintInjector owns these properties; avoid a second writer in stealth.
@@ -28,7 +29,7 @@ export class ProxyCheckError extends Error {
 }
 
 export async function runTask({ prisma, task, proxy, config, signal, onBrowser = () => {}, log = () => {}, warmupRunner = performWarmup, searchRunner = performSearchAndClick }) {
-  let browser; let stagedProfile; let stopLiveView = () => {};
+  let browser; let stagedProfile; let stopLiveView = () => {}; let stopImageCapture = () => {};
   try {
     signal?.throwIfAborted();
     if (task.projectId && !task.project) task = { ...task, project: await prisma.project.findUnique({ where: { id: task.projectId } }) };
@@ -71,6 +72,7 @@ export async function runTask({ prisma, task, proxy, config, signal, onBrowser =
     onBrowser(browser);
     signal?.throwIfAborted();
     const context = await createMobileContext(browser, profile, storageStatePath);
+    stopImageCapture = startCaptchaImageCapture(context);
     context.setDefaultTimeout(config.navigationTimeoutMs);
     context.setDefaultNavigationTimeout(config.navigationTimeoutMs);
     if (config.projectId) await restrictOwnedNavigation(context, task.project.targetUrl, Boolean(searchConfig));
@@ -140,6 +142,7 @@ export async function runTask({ prisma, task, proxy, config, signal, onBrowser =
     return result.count === 1;
   } finally {
     stopLiveView();
+    stopImageCapture();
     if (browser) await browser.close().catch(() => {});
     await stagedProfile?.discard().catch(() => {});
     onBrowser(null);

@@ -4,15 +4,18 @@ import { createServer } from 'node:http';
 import { chromium } from 'playwright';
 import { createCaptchaHandler } from '../worker/captcha-page.mjs';
 import { restrictNavigation } from '../worker/action-executor.mjs';
+import { startCaptchaImageCapture } from '../worker/captcha-image.mjs';
 
-for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, submitLabel = 'Continue', autoSubmit = false } of [
+for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, submitLabel = 'Continue', autoSubmit = false, clippedParent = false } of [
   { failures: 0 }, { failures: 1 }, { failures: 3 },
   { failures: 0, crossOrigin: true }, { failures: 0, crossOrigin: true, downloadStatus: 403 },
   { failures: 0, formPost: true },
   { failures: 0, formPost: true, submitLabel: 'Подтвердить выбор' },
   { failures: 0, submitLabel: 'Далее' },
   { failures: 0, formPost: true, autoSubmit: true },
-]) test(`Yandex image solving preserves source detail and bounds retries (${failures} provider failures, cross-origin: ${Boolean(crossOrigin)}, image HTTP ${downloadStatus}, POST: ${formPost}, button: ${submitLabel}, auto-submit: ${autoSubmit})`, async () => {
+  { failures: 0, crossOrigin: true, clippedParent: true, downloadStatus: 403 },
+  { failures: 1, crossOrigin: true, clippedParent: true, downloadStatus: 403 },
+]) test(`Yandex image solving preserves source detail and bounds retries (${failures} provider failures, cross-origin: ${Boolean(crossOrigin)}, image HTTP ${downloadStatus}, POST: ${formPost}, button: ${submitLabel}, auto-submit: ${autoSubmit}, clipped: ${clippedParent})`, async () => {
   const requests = [];
   const image = (width, height) => `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}"><defs><pattern id="p" patternUnits="userSpaceOnUse" width="2" height="1"><rect width="2" height="1" fill="white"/><rect width="1" height="1" fill="red"/></pattern></defs><rect width="100%" height="100%" fill="url(#p)"/></svg>`;
   const imageDownloads = [];
@@ -37,6 +40,7 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
   try {
     browser = await chromium.launch({ headless: true });
     const context = await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    startCaptchaImageCapture(context);
     const providerUrl = `http://127.0.0.1:${provider.address().port}`;
     const main = crossOrigin ? `${providerUrl}/main.svg` : `data:image/svg+xml;base64,${Buffer.from(image(320, 180)).toString('base64')}`;
     const instruction = crossOrigin ? `${providerUrl}/instruction.svg` : `data:image/svg+xml;base64,${Buffer.from(image(480, 80)).toString('base64')}`;
@@ -51,7 +55,7 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
     await context.route(challengeUrl, route => route.fulfill({ contentType: 'text/html; charset=utf-8', body: `
       <form id="checkbox-captcha-form"><button type="button" role="checkbox" onclick="document.getElementById('puzzle').hidden=false">I'm not a robot</button></form>
       <${formPost ? 'form method="post" action="/captcha-submit"' : 'div'} id="puzzle" hidden>
-        <div style="position:relative;width:240px;height:135px;margin:25px">
+        <div style="position:relative;width:240px;height:135px;margin:25px;${clippedParent ? 'overflow:hidden;transform:translateZ(0)' : ''}">
           <img id="main" src="${main}" style="width:100%;height:100%;pointer-events:none">
           <div id="input-layer" style="position:absolute;inset:0" onclick="window.receivedPoint={x:event.offsetX,y:event.offsetY};window.clicked=(window.clicked||0)+1;${formPost ? "document.getElementById('point-x').value=event.offsetX;document.getElementById('point-y').value=event.offsetY;" + (autoSubmit ? "setTimeout(() => document.getElementById('puzzle').requestSubmit(), 50);" : "setTimeout(() => document.getElementById('submit-puzzle').disabled=false, 400);") : ''}"></div>
         </div>
@@ -114,6 +118,13 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
       return [Array.from(context.getImageData(10, 90, 1, 1).data), Array.from(context.getImageData(11, 90, 1, 1).data)];
     }, requests[0].task.imgInstructions);
     assert.deepEqual(samples, [[255, 0, 0, 255], [255, 255, 255, 255]]);
+    const mainPixel = await page.evaluate(async base64 => {
+      const image = new Image(); image.src = `data:image/png;base64,${base64}`; await image.decode();
+      const canvas = document.createElement('canvas'); canvas.width = 320; canvas.height = 180;
+      const context = canvas.getContext('2d'); context.drawImage(image, 0, 0);
+      return Array.from(context.getImageData(10, 160, 1, 1).data);
+    }, requests[0].task.image);
+    assert.deepEqual(mainPixel, [255, 0, 0, 255], 'Lower image rows must not be clipped by the puzzle container');
     if (crossOrigin) {
       assert.equal(imageDownloads.length, 0, 'Capture must use displayed pixels without downloading a new challenge');
     }
