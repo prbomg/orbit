@@ -4,6 +4,7 @@ import { chromium } from 'playwright';
 import { createCaptchaHandler, detectCaptcha } from '../worker/captcha-page.mjs';
 import { CaptchaError } from '../worker/captcha-provider.mjs';
 import { pollDatabase } from '../worker/runner.mjs';
+import { ProfileError } from '../worker/profiles.mjs';
 
 test('a document replacement during captcha detection is retried', async () => {
   const frame = { evaluate: async () => { throw new Error('Execution context was destroyed, most likely because of a navigation'); }, isDetached: () => false };
@@ -129,7 +130,7 @@ test('missing RuCaptcha key is reported before claiming that a provider request 
   } finally { await browser.close(); }
 });
 
-for (const code of ['widget_not_detected', 'solve_limit', 'image_capture_failed']) test(`managed worker stops after ${code} instead of retrying the task`, async () => {
+for (const code of ['widget_not_detected', 'solve_limit', 'image_capture_failed', 'profile_write_failed', 'profile_state_invalid']) test(`managed worker stops after ${code} instead of retrying the task`, async () => {
   const events = []; let attempts = 0;
   const result = await pollDatabase({
     prisma: {
@@ -139,7 +140,7 @@ for (const code of ['widget_not_detected', 'solve_limit', 'image_capture_failed'
     config: { projectId: 'project', cooldownMs: 1, pollMs: 1 },
     signal: new AbortController().signal,
     log: (event, details) => events.push({ event, ...details }),
-    runTaskRunner: async () => { attempts++; throw new CaptchaError(code); },
+    runTaskRunner: async () => { attempts++; throw code.startsWith('profile_') ? new ProfileError(code) : new CaptchaError(code); },
   });
   assert.equal(result, 1);
   assert.equal(attempts, 1);

@@ -194,6 +194,12 @@ export async function pollDatabase({ prisma, config, signal, once = false, onBro
             log('project_blocked', { taskId: task.id, errorType: error.name, code: error.code });
             return 1;
           }
+          if (config.projectId && error instanceof ProfileError) {
+            // Repeating the whole visit can spend on another captcha without
+            // fixing a profile that cannot be loaded or saved.
+            log('project_blocked', { taskId: task.id, errorType: error.name, code: error.code });
+            return 1;
+          }
         }
         if (once) return error instanceof TaskStoppedError ? 0 : 1;
       }

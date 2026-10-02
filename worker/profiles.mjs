@@ -13,6 +13,8 @@ const cookieSchema = z.object({
   name: z.string(), value: z.string(), domain: z.string(), path: z.string(),
   expires: z.number().finite(), httpOnly: z.boolean(), secure: z.boolean(),
   sameSite: z.enum(['Strict', 'Lax', 'None']), partitionKey: z.string().optional(),
+  // Chromium returns this alongside partitionKey; it must survive save/reuse.
+  _crHasCrossSiteAncestor: z.boolean().optional(),
 }).strict();
 const profileSchema = z.object({
   version: z.literal(2), profileId: z.string(), mobileOS: z.enum(['android', 'ios']),
@@ -36,25 +38,32 @@ function profilePath(directory, id) {
   if (!/^[a-zA-Z0-9_-]{1,128}$/.test(id)) throw new ProfileError('invalid_profile_id');
   return join(directory, `${id}.json`);
 }
+const mobileProfileOS = ua => /Android.*Mobile/i.test(ua) ? 'android' : /(?:iPhone|iPad|iPod).*Mobile/i.test(ua) ? 'ios' : null;
 function validateProfile(value, profileId) {
   const profile = profileSchema.parse(value);
   const ua = profile.fingerprint.navigator.userAgent;
-  const os = /Android.*Mobile/i.test(ua) ? 'android' : /(?:iPhone|iPad|iPod).*Mobile/i.test(ua) ? 'ios' : null;
+  const os = mobileProfileOS(ua);
   if (profile.profileId !== profileId || os !== profile.mobileOS || !/Chrome\/|CriOS\//.test(ua) ||
       profile.headers['user-agent'] !== ua) throw new ProfileError('invalid_mobile_profile');
   return profile;
 }
 
 export function generateMobileProfile(profileId, mobileOS) {
-  const { fingerprint, headers } = generator.getFingerprint(mobileOS ? { operatingSystems: [mobileOS] } : {});
-  // Some samples contain zero viewport dimensions. Use one coherent mobile viewport.
-  const screen = fingerprint.screen;
-  Object.assign(screen, { innerWidth: screen.width, innerHeight: screen.height,
-    clientWidth: screen.width, clientHeight: screen.height, outerWidth: screen.width, outerHeight: screen.height });
-  const os = /Android/i.test(fingerprint.navigator.userAgent) ? 'android' : 'ios';
-  if (os === 'ios') fingerprint.navigator.userAgentData = null;
-  return validateProfile({ version: 2, profileId, mobileOS: os, fingerprint, headers,
-    canvasSeed: randomBytes(4).readUInt32BE(), cookies: [], origins: [], createdAt: new Date().toISOString(), savedAt: null }, profileId);
+  // The generator occasionally labels an Android tablet UA as a mobile sample.
+  // Select another sample instead of generating a profile our own schema rejects.
+  for (let attempt = 0; attempt < 10; attempt++) {
+    const { fingerprint, headers } = generator.getFingerprint(mobileOS ? { operatingSystems: [mobileOS] } : {});
+    const os = mobileProfileOS(fingerprint.navigator.userAgent);
+    if (!os || (mobileOS && os !== mobileOS)) continue;
+    // Some samples contain zero viewport dimensions. Use one coherent mobile viewport.
+    const screen = fingerprint.screen;
+    Object.assign(screen, { innerWidth: screen.width, innerHeight: screen.height,
+      clientWidth: screen.width, clientHeight: screen.height, outerWidth: screen.width, outerHeight: screen.height });
+    if (os === 'ios') fingerprint.navigator.userAgentData = null;
+    return validateProfile({ version: 2, profileId, mobileOS: os, fingerprint, headers,
+      canvasSeed: randomBytes(4).readUInt32BE(), cookies: [], origins: [], createdAt: new Date().toISOString(), savedAt: null }, profileId);
+  }
+  throw new ProfileError('profile_generation_failed');
 }
 
 async function readProfileFile(filename) {
@@ -159,29 +168,37 @@ export async function stageMobileProfile(directory, profile, context) {
   const target = profilePath(directory, profile.profileId);
   const temporary = join(directory, `.${profile.profileId}.${randomUUID()}.tmp`);
   let cookiesCount;
+  let reason = 'profile_write_failed';
   try {
     await mkdir(directory, { recursive: true, mode: 0o700 });
     const stat = await lstat(directory);
     if (!stat.isDirectory() || stat.isSymbolicLink()) throw new ProfileError('invalid_profiles_directory');
+    // Capture in memory, then write one validated private file. Playwright should
+    // not write a second, partial storage-state JSON over our already-open file.
+    reason = 'profile_storage_failed';
+    const state = await context.storageState();
+    reason = 'profile_state_invalid';
+    const value = validateProfile({ ...profile, cookies: state.cookies, origins: state.origins, savedAt: new Date().toISOString() }, profile.profileId);
+    cookiesCount = value.cookies.length;
+    const json = JSON.stringify(value, null, 2);
+    if (Buffer.byteLength(json) > 10_000_000) throw new ProfileError('profile_too_large');
+    reason = 'profile_write_failed';
     const file = await open(temporary, 'wx', 0o600);
-    try {
-      // Capture both cookies and each origin's localStorage while context is open.
-      const state = await context.storageState({ path: temporary });
-      cookiesCount = state.cookies.length;
-      const value = validateProfile({ ...profile, ...state, savedAt: new Date().toISOString() }, profile.profileId);
-      const json = JSON.stringify(value, null, 2);
-      if (Buffer.byteLength(json) > 10_000_000) throw new ProfileError('profile_too_large');
-      await file.truncate(0); await file.writeFile(json); await file.sync();
-    }
+    try { await file.writeFile(json); await file.sync(); }
     finally { await file.close(); }
     return {
-      publish: async () => { try { await rename(temporary, target); } catch { throw new ProfileError('profile_write_failed'); } },
+      publish: async () => { try { await rename(temporary, target); } catch (error) { throw profileSaveError(error); } },
       discard: async () => { await rm(temporary, { force: true }); },
       cookiesCount,
     };
   } catch (error) {
     await rm(temporary, { force: true }).catch(() => {});
     if (error instanceof ProfileError) throw error;
-    throw new ProfileError('profile_write_failed');
+    throw profileSaveError(error, reason);
   }
+}
+
+function profileSaveError(error, fallback = 'profile_write_failed') {
+  const code = ['EACCES', 'EPERM'].includes(error?.code) ? 'profile_permission_denied' : error?.code === 'ENOSPC' ? 'profile_disk_full' : fallback;
+  return new ProfileError(code);
 }

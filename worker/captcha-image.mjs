@@ -106,6 +106,51 @@ async function renderAtSize(image, { width, height, base64, contentType, sourceU
   } finally { bitmap.close(); }
 }
 
+async function snapshotCanvas(locator, width, height, signal) {
+  // A tainted canvas has no URL and cannot be exported by JavaScript. Copy its
+  // current bitmap into a blank same-origin window and let Chromium capture it
+  // at one CSS pixel per source pixel. This preserves canvas drawing/overlays,
+  // avoids clipping by the challenge layout and leaves its viewport untouched.
+  const context = locator.page().context();
+  let snapshotPage;
+  const created = context.waitForEvent('page', { timeout: 5_000 });
+  // Attach a rejection handler immediately if window.open itself fails.
+  created.catch(() => {});
+  try {
+    await locator.evaluate((image, { width, height }) => {
+      if (!(image instanceof HTMLCanvasElement)) throw new Error('Canvas expected');
+      const view = window.open('about:blank');
+      if (!view) throw new Error('Canvas capture window unavailable');
+      try {
+        const viewport = view.document.createElement('meta');
+        viewport.name = 'viewport'; viewport.content = 'width=device-width,initial-scale=1';
+        view.document.head.appendChild(viewport);
+        view.document.body.style.margin = '0';
+        const copy = view.document.createElement('canvas');
+        copy.width = width; copy.height = height;
+        copy.style.display = 'block';
+        const context = copy.getContext('2d');
+        context.fillStyle = '#303035'; context.fillRect(0, 0, width, height);
+        const scale = Math.min(width / image.width, height / image.height);
+        const renderedWidth = image.width * scale; const renderedHeight = image.height * scale;
+        context.drawImage(image, (width - renderedWidth) / 2, (height - renderedHeight) / 2, renderedWidth, renderedHeight);
+        view.document.body.appendChild(copy);
+      } catch (error) { view.close(); throw error; }
+    }, { width, height });
+    snapshotPage = await created;
+    signal?.throwIfAborted();
+    // The capture window contains only the fixed-size copy, so resizing it cannot
+    // redraw the live challenge or alter the profile of the task's page.
+    await snapshotPage.setViewportSize({ width: width + 16, height: height + 16 });
+    const png = await snapshotPage.locator('canvas').screenshot({ type: 'png', scale: 'css', timeout: 5_000 });
+    signal?.throwIfAborted();
+    return png.toString('base64');
+  } finally {
+    snapshotPage ??= await created.catch(() => null);
+    await snapshotPage?.close().catch(() => {});
+  }
+}
+
 async function captureAtSize(locator, width, height, signal, frame, { log, taskId, sourceName }) {
   let reason = 'browser_image_decode';
   let diagnostic = {};
@@ -128,19 +173,25 @@ async function captureAtSize(locator, width, height, signal, frame, { log, taskI
       const scheme = source.url.split(':', 1)[0];
       diagnostic = { element: source.element, sourceType: ['http', 'https', 'blob', 'data'].includes(scheme) ? scheme : source.url ? 'other' : 'none',
         captureState: frames ? 'active' : 'disabled', capturedResponses: new Set(images?.values()).size };
-      const response = images?.get(imageUrl(source.url));
-      if (!response) throw new Error('Original image response unavailable');
-      const headerType = response.headers()['content-type']?.split(';')[0].trim().toLowerCase();
-      // Browser image decoders can recognize raster bytes even when the server
-      // uses application/octet-stream. Do not reject an already displayed PNG.
-      const contentType = headerType?.startsWith('image/') ? headerType : 'application/octet-stream';
-      reason = 'original_response_body';
-      const body = await response.body();
-      signal?.throwIfAborted();
-      if (!body.length || body.length > 5_000_000) throw new Error('Invalid image size');
-      reason = 'original_image_decode';
-      base64 = await locator.evaluate(renderAtSize, { width, height, sourceUrl: source.url,
-        contentType, base64: body.toString('base64') });
+      if (source.element === 'canvas') {
+        reason = 'canvas_snapshot';
+        method = 'canvas_snapshot';
+        base64 = await snapshotCanvas(locator, width, height, signal);
+      } else {
+        const response = images?.get(imageUrl(source.url));
+        if (!response) throw new Error('Original image response unavailable');
+        const headerType = response.headers()['content-type']?.split(';')[0].trim().toLowerCase();
+        // Browser image decoders can recognize raster bytes even when the server
+        // uses application/octet-stream. Do not reject an already displayed PNG.
+        const contentType = headerType?.startsWith('image/') ? headerType : 'application/octet-stream';
+        reason = 'original_response_body';
+        const body = await response.body();
+        signal?.throwIfAborted();
+        if (!body.length || body.length > 5_000_000) throw new Error('Invalid image size');
+        reason = 'original_image_decode';
+        base64 = await locator.evaluate(renderAtSize, { width, height, sourceUrl: source.url,
+          contentType, base64: body.toString('base64') });
+      }
     }
     signal?.throwIfAborted();
     log('captcha_image_ready', { taskId, source: sourceName, method, width, height });

@@ -336,6 +336,8 @@ test('search runner saves only a found target; miss closes Chromium without chan
       log: event => events.push(event),
       searchRunner: async (page, row, params) => {
         let clock = 0;
+        await page.context().addCookies([{ name: 'partitioned-session', value: 'synthetic-session', domain: 'example.com', path: '/',
+          expires: -1, httpOnly: true, secure: true, sameSite: 'None', partitionKey: 'https://ya.ru', _crHasCrossSiteAncestor: true }]);
         await installSearchFixture(page.context(), { targetPage: miss ? null : 2, competitorPopup: true, targetPopup: true });
         return performSearchAndClick(page, row, { ...params, engines: { yandex: { home: 'http://search.test/', domains: ['search.test'] } }, waitFor: async ms => { clock += ms; }, now: () => clock, targetDurationMs: 60_000 });
       },
@@ -344,6 +346,7 @@ test('search runner saves only a found target; miss closes Chromium without chan
     assert.equal((await f.prisma.task.findUniqueOrThrow({ where: { id: task.id } })).currentExecutions, 1);
     assert.equal((await f.prisma.task.findUniqueOrThrow({ where: { id: task.id } })).status, 'completed');
     const previous = await readFile(f.profilePath, 'utf8');
+    assert.ok(JSON.parse(previous).cookies.some(cookie => cookie.name === 'partitioned-session' && cookie._crHasCrossSiteAncestor === true && cookie.partitionKey === 'https://ya.ru'));
     assert.ok(JSON.parse(previous).origins.some(origin => origin.origin === 'http://www.target.test'));
     miss = true;
     const restart = await f.prisma.task.update({ where: { id: task.id }, data: { status: 'running' } });

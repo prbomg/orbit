@@ -1,10 +1,11 @@
-import { test } from 'node:test';
+import { test, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { mkdtemp, readFile, writeFile, stat, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createServer } from 'node:http';
 import { chromium } from 'playwright';
+import { FingerprintGenerator } from 'fingerprint-generator';
 import { generateMobileProfile, createMobileContext, createMobilePage, loadMobileProfile, stageMobileProfile, ProfileError } from '../worker/profiles.mjs';
 
 test('Android/iOS metadata is present in the first document, Canvas noise is stable and differs from native output', { timeout: 30_000 }, async () => {
@@ -72,9 +73,9 @@ test('profile files are private, validated and atomically published; corrupt pro
   try {
     const loaded = await loadMobileProfile(dir, 'task-fixture');
     assert.equal(loaded.reused, false);
-    const context = { storageState: async ({ path }) => {
+    const context = { storageState: async () => {
       const state = { cookies: [], origins: [{ origin: 'https://example.com', localStorage: [{ name: 'session', value: 'synthetic-value' }] }] };
-      await writeFile(path, JSON.stringify(state)); return state;
+      return state;
     } };
     const staged = await stageMobileProfile(dir, loaded.profile, context);
     await assert.rejects(readFile(join(dir, 'task-fixture.json')), { code: 'ENOENT' });
@@ -97,6 +98,38 @@ test('profile files are private, validated and atomically published; corrupt pro
   } finally { await rm(dir, { recursive: true, force: true }); }
 });
 
+test('mobile profile generation skips a tablet sample instead of failing validation', () => {
+  const valid = generateMobileProfile('template-profile', 'ios');
+  let calls = 0;
+  const method = mock.method(FingerprintGenerator.prototype, 'getFingerprint', () => {
+    calls++;
+    const fingerprint = structuredClone(valid.fingerprint); const headers = { ...valid.headers };
+    if (calls === 1) fingerprint.navigator.userAgent = headers['user-agent'] = 'Mozilla/5.0 (Linux; Android 10; K) Chrome/146.0.0.0 Safari/537.36';
+    return { fingerprint, headers };
+  });
+  try {
+    const profile = generateMobileProfile('valid-profile');
+    assert.equal(calls, 2);
+    assert.equal(profile.mobileOS, 'ios');
+    assert.equal(profile.fingerprint.navigator.userAgent, profile.headers['user-agent']);
+    assert.equal(profile.profileId, 'valid-profile');
+  } finally { method.mock.restore(); }
+});
+
+test('a failed profile save preserves the last successful file and reports the failing stage', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'orbit-profile-failure-'));
+  try {
+    const profile = generateMobileProfile('saved-profile');
+    const validState = { cookies: [], origins: [] };
+    const staged = await stageMobileProfile(dir, profile, { storageState: async () => validState });
+    await staged.publish(); await staged.discard();
+    const path = join(dir, 'saved-profile.json'); const previous = await readFile(path, 'utf8');
+    await assert.rejects(stageMobileProfile(dir, profile, { storageState: async () => { throw new Error('synthetic-secret'); } }), error => error.code === 'profile_storage_failed' && !error.message.includes('synthetic-secret'));
+    await assert.rejects(stageMobileProfile(dir, profile, { storageState: async () => ({ cookies: [{}], origins: [] }) }), error => error.code === 'profile_state_invalid');
+    assert.equal(await readFile(path, 'utf8'), previous);
+  } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
 test('legacy taskId profiles preserve their fingerprint and cookies when upgraded to profileId', async () => {
   const dir = await mkdtemp(join(tmpdir(), 'orbit-legacy-profile-'));
   try {
@@ -111,4 +144,30 @@ test('legacy taskId profiles preserve their fingerprint and cookies when upgrade
     assert.deepEqual(loaded.profile.origins, []);
     await assert.rejects(readFile(join(dir, 'new-profile.json')), { code: 'ENOENT' });
   } finally { await rm(dir, { recursive: true, force: true }); }
+});
+
+test('partitioned Chromium cookies survive atomic profile save and reuse', async () => {
+  const dir = await mkdtemp(join(tmpdir(), 'orbit-partitioned-profile-'));
+  let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const profile = generateMobileProfile('partitioned-profile', 'android');
+    const context = await createMobileContext(browser, profile);
+    await context.addCookies([{ name: 'partitioned-session', value: 'synthetic-value', domain: 'example.com', path: '/',
+      expires: -1, httpOnly: true, secure: true, sameSite: 'None', partitionKey: 'https://ya.ru', _crHasCrossSiteAncestor: true }]);
+    const state = await context.storageState();
+    assert.equal(state.cookies[0]._crHasCrossSiteAncestor, true);
+    const staged = await stageMobileProfile(dir, profile, context);
+    await staged.publish(); await staged.discard();
+    await context.close();
+    const loaded = await loadMobileProfile(dir, profile.profileId);
+    assert.deepEqual(loaded.profile.cookies, state.cookies);
+    const reused = await createMobileContext(browser, loaded.profile, loaded.storageStatePath);
+    assert.deepEqual((await reused.storageState()).cookies, state.cookies);
+    await reused.close();
+    if (process.platform !== 'win32') assert.equal((await stat(loaded.storageStatePath)).mode & 0o777, 0o600);
+  } finally {
+    await browser?.close();
+    await rm(dir, { recursive: true, force: true });
+  }
 });
