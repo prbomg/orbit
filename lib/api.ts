@@ -1,9 +1,11 @@
+import { TcpError } from "@/utils/proxyTcp";
+import { message as tcpMessage } from "@/utils/proxyTcpStore";
 import { PoolError } from "@/utils/profilePool";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 export const proxySelect = {
-  id: true, host: true, port: true, username: true, isActive: true, rotationUrl: true,
+  id: true, host: true, port: true, username: true, isActive: true, rotationUrl: true, channel: true, purpose: true, tcpChannelId: true, tcpChannel: {select:{profileName:true,status:true,family:true,checkedAt:true}},
 } satisfies Prisma.ProxySelect;
 
 export function json(data: unknown, status = 200) {
@@ -20,7 +22,8 @@ function checkOrigin(request: Request) {
   // browser-facing authority, including its port.
   const host = request.headers.get("host") ?? new URL(request.url).host;
   const protocol = request.headers.get("x-forwarded-proto") ?? new URL(request.url).protocol.replace(":", "");
-  if ((origin && origin !== `${protocol}://${host}`) || request.headers.get("sec-fetch-site") === "cross-site") {
+  const expectedOrigin = process.env.APP_ORIGIN || `${protocol}://${host}`;
+  if ((origin && origin !== expectedOrigin) || request.headers.get("sec-fetch-site") === "cross-site") {
     throw new ApiError(403, "Запрос из другого источника запрещён");
   }
 }
@@ -39,6 +42,7 @@ export function checkDeleteOrigin(request: Request) {
 }
 
 export function apiError(error: unknown): Response {
+  if (error instanceof TcpError) return json({error:tcpMessage(error),code:error.code}, ["tcp_busy","tcp_management_busy","tcp_channel_conflict"].includes(error.code)?409:502);
   if (error instanceof PoolError) return json({ error: error.message, code: error.code, available: error.available }, error.code === "project_missing" ? 404 : 409);
   if (error instanceof ApiError) return json({ error: error.message }, error.status);
   if (error instanceof z.ZodError) return json({

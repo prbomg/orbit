@@ -1,0 +1,1 @@
+export function getBalance(key: string | null, options?: {baseUrl?: string; refresh?: boolean; fetchImpl?: typeof fetch}): Promise<{balance: number | null; checkedAt: string | null; errorCode: string | null}>;

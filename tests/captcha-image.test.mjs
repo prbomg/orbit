@@ -1,3 +1,4 @@
+import {mobileProfileFixture} from './helpers/mobile-profile-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createServer } from 'node:http';
@@ -6,10 +7,10 @@ import { chromium } from 'playwright';
 import { createCaptchaHandler } from '../worker/captcha-page.mjs';
 import { restrictNavigation } from '../worker/action-executor.mjs';
 import { startCaptchaImageCapture } from '../worker/captcha-image.mjs';
-import { generateMobileProfile, createMobileContext, createMobilePage } from '../worker/profiles.mjs';
+import { createMobileContext, createMobilePage } from '../worker/profiles.mjs';
 
-for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, submitLabel = 'Continue', autoSubmit = false, clippedParent = false, mobileOS, csp = false, imageMime = 'image/png', captureEnabled = true, canvasInstruction = false, canvasMain = false, abortCanvasCapture = false } of [
-  { failures: 0 }, { failures: 1 }, { failures: 3 },
+for (const { failures, resultStatus = 200, crossOrigin, downloadStatus = 200, formPost = false, submitLabel = 'Continue', autoSubmit = false, clippedParent = false, mobileOS, csp = false, imageMime = 'image/png', captureEnabled = true, canvasInstruction = false, canvasMain = false, abortCanvasCapture = false } of [
+  { failures: 0 }, { failures: 0, resultStatus: 429 }, { failures: 1 }, { failures: 3 },
   { failures: 0, crossOrigin: true }, { failures: 0, crossOrigin: true, downloadStatus: 403 },
   { failures: 0, formPost: true },
   { failures: 0, formPost: true, submitLabel: 'Подтвердить выбор' },
@@ -29,7 +30,7 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
   { failures: 1, crossOrigin: true, canvasInstruction: true, csp: true },
   { failures: 0, crossOrigin: true, canvasInstruction: true, canvasMain: true, clippedParent: true, mobileOS: 'ios', csp: true },
   { failures: 0, crossOrigin: true, canvasInstruction: true, abortCanvasCapture: true },
-]) test(`Yandex image solving preserves source detail and bounds retries (${failures} provider failures, cross-origin: ${Boolean(crossOrigin)}, image HTTP ${downloadStatus}, POST: ${formPost}, button: ${submitLabel}, auto-submit: ${autoSubmit}, clipped: ${clippedParent}, profile: ${mobileOS ?? 'plain'}, CSP: ${csp}, MIME: ${imageMime}, capture: ${captureEnabled}, canvas instruction: ${canvasInstruction}, canvas main: ${canvasMain}, abort capture: ${abortCanvasCapture})`, async () => {
+]) test(`Yandex image solving preserves source detail and bounds retries (result HTTP ${resultStatus}, ${failures} provider failures, cross-origin: ${Boolean(crossOrigin)}, image HTTP ${downloadStatus}, POST: ${formPost}, button: ${submitLabel}, auto-submit: ${autoSubmit}, clipped: ${clippedParent}, profile: ${mobileOS ?? 'plain'}, CSP: ${csp}, MIME: ${imageMime}, capture: ${captureEnabled}, canvas instruction: ${canvasInstruction}, canvas main: ${canvasMain}, abort capture: ${abortCanvasCapture})`, async () => {
   const requests = [];
   const image = (width, height) => readFileSync(new URL(`./fixtures/captcha-${width === 320 ? 'main' : 'instruction'}.png`, import.meta.url));
   const imageDownloads = [];
@@ -53,7 +54,7 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
   let browser;
   try {
     browser = await chromium.launch({ headless: true });
-    const profile = mobileOS ? generateMobileProfile(`captcha-${mobileOS}`, mobileOS) : null;
+    const profile = mobileOS ? mobileProfileFixture(`captcha-${mobileOS}`, mobileOS) : null;
     if (profile) profile.canvasSeed = 12345;
     const context = profile ? await createMobileContext(browser, profile)
       : await browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
@@ -93,7 +94,7 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
       // bypass Playwright routing and would reach the real search provider.
       await route.fulfill({ contentType: 'text/html', body: `<script>location.replace('/search/?clicked=1&x=${coordinates.get('x')}&y=${coordinates.get('y')}')</script>` });
     });
-    await context.route('**://ya.ru/search/**', route => route.fulfill({ contentType: 'text/html', body: '<h1>Results</h1>' }));
+    await context.route('**://ya.ru/search/**', route => route.fulfill({ status: resultStatus, headers: { 'Retry-After': '120' }, contentType: 'text/html', body: '<h1>Results</h1>' }));
     const page = profile ? await createMobilePage(context, profile) : await context.newPage();
     await page.goto(challengeUrl);
     const navigationPolicy = formPost ? await restrictNavigation(context, new URL(challengeUrl).origin) : { clearCaptchaPost() {} };
@@ -137,7 +138,7 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
       return;
     }
     if (failures >= 3) {
-      await assert.rejects(check(page), error => error.code === 'solve_limit');
+      await assert.rejects(check(page), error => error.code === 'incorrect_limit');
       assert.equal(requests.length, 3);
       assert.equal(events.filter(event => event === 'captcha_retrying').length, 2);
       await context.close();
@@ -147,6 +148,11 @@ for (const { failures, crossOrigin, downloadStatus = 200, formPost = false, subm
     try { handled = await check(page); }
     catch (error) { assert.fail(`${error.code}: ${new URL(page.url()).pathname}, submitted=${submitted}, events=${events.join(',')}`); }
     assert.equal(handled, true);
+    assert.ok(details.some(item => item.event === (resultStatus === 200 ? 'captcha_page_loaded' : 'captcha_page_load_failed') && item.status === resultStatus));
+    if (resultStatus === 429) {
+      assert.ok(details.some(item => item.event === 'captcha_page_load_failed' && item.retryAfterMs === 120000));
+      assert.equal(events.includes('captcha_page_loaded'), false);
+    }
     assert.equal(new URL(page.url()).pathname, '/search/');
     if (formPost) assert.equal(submitted, true);
     assert.equal(new URL(page.url()).searchParams.get('clicked'), '1');

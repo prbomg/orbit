@@ -4,7 +4,9 @@ import { chromium } from 'playwright';
 import { createCaptchaHandler, detectCaptcha } from '../worker/captcha-page.mjs';
 import { CaptchaError } from '../worker/captcha-provider.mjs';
 import { pollDatabase } from '../worker/runner.mjs';
+import { poolFixture } from './helpers/pool-fixture.mjs';
 import { ProfileError } from '../worker/profiles.mjs';
+const launch = () => chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
 
 test('a document replacement during captcha detection is retried', async () => {
   const frame = { evaluate: async () => { throw new Error('Execution context was destroyed, most likely because of a navigation'); }, isDetached: () => false };
@@ -13,7 +15,7 @@ test('a document replacement during captcha detection is retried', async () => {
 });
 
 test('Yandex full-page verification without a readable widget reports its reason', async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launch();
   try {
     const context = await browser.newContext();
     await context.route('https://ya.ru/showcaptcha', route => route.fulfill({ contentType: 'text/html', body: '<h1>Please confirm that you are not a robot</h1>' }));
@@ -28,7 +30,7 @@ test('Yandex full-page verification without a readable widget reports its reason
 });
 
 test('Yandex redirect between challenge pages reports a captcha error rather than a browser error', async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launch();
   try {
     const context = await browser.newContext();
     await context.route('https://ya.ru/showcaptchafast', route => route.fulfill({ contentType: 'text/html', body: '<script>setTimeout(() => { location.href = "/showcaptcha"; }, 100)</script>' }));
@@ -45,7 +47,7 @@ test('Yandex redirect between challenge pages reports a captcha error rather tha
 });
 
 test('Yandex challenge waits for a widget rendered after navigation', async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launch();
   try {
     const context = await browser.newContext();
     await context.route('https://ya.ru/showcaptchafast', route => route.fulfill({ contentType: 'text/html', body: '<script>setTimeout(() => { document.body.innerHTML = `<div class="smart-captcha" data-sitekey="fixture-smartcaptcha-sitekey"></div>`; }, 200)</script>' }));
@@ -60,7 +62,7 @@ test('Yandex challenge waits for a widget rendered after navigation', async () =
 });
 
 test('Yandex checkbox is opened automatically before looking for a sitekey', async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launch();
   try {
     const context = await browser.newContext();
     await context.route('https://ya.ru/showcaptcha', route => route.fulfill({ contentType: 'text/html', body: `
@@ -79,7 +81,7 @@ test('Yandex checkbox is opened automatically before looking for a sitekey', asy
 });
 
 test('Yandex checkbox is retried after showcaptchafast redirects to showcaptcha', async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launch();
   try {
     const context = await browser.newContext();
     await context.route('https://ya.ru/showcaptchafast', route => route.fulfill({ contentType: 'text/html', body: '<script>setTimeout(() => location.href = "/showcaptcha", 100)</script>' }));
@@ -97,7 +99,7 @@ test('Yandex checkbox is retried after showcaptchafast redirects to showcaptcha'
 });
 
 test('visible browser can continue after a human completes a Yandex challenge', async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launch();
   try {
     const context = await browser.newContext();
     await context.route('https://ya.ru/showcaptcha', route => route.fulfill({ contentType: 'text/html', body: '<button id="manual" onclick="location.href = \'/search/\'">Complete check</button>' }));
@@ -116,7 +118,7 @@ test('visible browser can continue after a human completes a Yandex challenge', 
 });
 
 test('missing RuCaptcha key is reported before claiming that a provider request was sent', async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await launch();
   try {
     const context = await browser.newContext();
     await context.route('https://owned.test/', route => route.fulfill({ contentType: 'text/html', body: '<div class="smart-captcha" data-sitekey="fixture-smartcaptcha-sitekey"></div>' }));
@@ -130,19 +132,24 @@ test('missing RuCaptcha key is reported before claiming that a provider request 
   } finally { await browser.close(); }
 });
 
-for (const code of ['widget_not_detected', 'solve_limit', 'image_capture_failed', 'profile_write_failed', 'profile_state_invalid']) test(`managed worker stops after ${code} instead of retrying the task`, async () => {
+for (const code of ['widget_not_detected', 'checkbox_not_completed', 'checkbox_navigation_timeout', 'solve_limit', 'incorrect_limit', 'image_capture_failed', 'profile_write_failed', 'profile_state_invalid']) test(`managed worker retries ${code} and stops only the task after five identical failures`, async () => {
   const events = []; let attempts = 0;
+  const f = await poolFixture();
+  try {
+  for (let i=0;i<6;i++) await f.ready();
+  await f.db.proxy.create({data:{host:'127.0.0.2',port:8000,username:'fixture',password:'fixture'}});
+  const task = await f.task();
   const result = await pollDatabase({
-    prisma: {
-      task: { findMany: async () => [{ id: 'task', taskType: 'target', searchEngine: 'yandex', currentExecutions: 0, targetExecutions: 5 }] },
-      proxy: { findMany: async () => [{ id: 'proxy' }] },
-    },
-    config: { projectId: 'project', cooldownMs: 1, pollMs: 1 },
+    prisma: f.db,
+    config: { projectId: f.project.id, cooldownMs: 1, pollMs: 1 },
     signal: new AbortController().signal,
     log: (event, details) => events.push({ event, ...details }),
     runTaskRunner: async () => { attempts++; throw code.startsWith('profile_') ? new ProfileError(code) : new CaptchaError(code); },
   });
-  assert.equal(result, 1);
-  assert.equal(attempts, 1);
-  assert.ok(events.some(item => item.event === 'project_blocked' && item.code === code));
+  assert.equal(result, 0);
+  assert.equal(attempts, 5);
+  assert.equal((await f.db.task.findUnique({where:{id:task.id}})).status,'failed');
+  assert.ok(events.some(item => item.event === 'task_retry_exhausted' && item.code === code));
+  assert.ok(!events.some(item => item.event === 'project_blocked'));
+  } finally { await f.cleanup(); }
 });

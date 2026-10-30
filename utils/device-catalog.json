@@ -1,0 +1,771 @@
+{
+  "version": "android-catalog-2026-10-v3",
+  "publishedAt": "2026-10-23T12:00:00Z",
+  "templates": [
+    {
+      "id": "redmi_note13_4g_android14",
+      "revision": 1,
+      "name": "Xiaomi Redmi Note 13 4G",
+      "model": "23129RAA4G",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 800,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 610"
+      },
+      "defaultWeight": 180,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.mi.com/global/product/redmi-note-13/specs/",
+            "scope": "Спецификация производителя: семейство устройства, экран и аппаратная платформа; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет. Веса задают распределение Orbit, а не измеренную долю рынка РФ."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "redmi_note13_pro_5g_android14",
+      "revision": 1,
+      "name": "Xiaomi Redmi Note 13 Pro 5G",
+      "model": "2312DRA50G",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1220,
+        "height": 2712
+      },
+      "renderScreen": {
+        "width": 1220,
+        "height": 2712
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 407,
+        "height": 904,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 710"
+      },
+      "defaultWeight": 140,
+      "evidence": {
+        "reviewedAt": "2026-10-23",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.mi.com/global/product/redmi-note-13-pro-5g/specs/",
+            "scope": "Спецификация производителя: семейство устройства, экран и аппаратная платформа; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "redmi_note12_android14",
+      "revision": 1,
+      "name": "Xiaomi Redmi Note 12 4G",
+      "model": "23021RAA2Y",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "physicalMemoryGb": 6,
+      "browser": {
+        "width": 393,
+        "height": 873,
+        "dpr": 2.75,
+        "memory": 4,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 610"
+      },
+      "defaultWeight": 130,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.mi.com/sg/product/redmi-note-12/specs/",
+            "scope": "Спецификация производителя: семейство устройства, экран и аппаратная платформа; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет. Веса задают распределение Orbit, а не измеренную долю рынка РФ."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "a55_android14",
+      "revision": 1,
+      "name": "Samsung Galaxy A55 5G",
+      "model": "SM-A556E",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 780,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "ARM",
+        "renderer": "Mali-G68"
+      },
+      "defaultWeight": 130,
+      "evidence": {
+        "reviewedAt": "2026-10-23",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/levant/smartphones/galaxy-a/galaxy-a55-5g-awesome-iceblue-128gb-sm-a556ezkaeue/",
+            "scope": "Спецификация производителя: семейство устройства и экран; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "a54_android14",
+      "revision": 1,
+      "name": "Samsung Galaxy A54 5G",
+      "model": "SM-A546E",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 780,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "ARM",
+        "renderer": "Mali-G68"
+      },
+      "defaultWeight": 120,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/ru/smartphones/galaxy-a/galaxy-a54-5g-green-128gb-sm-a546elgaser/",
+            "scope": "Спецификация производителя: семейство устройства, экран и аппаратная платформа; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет. Веса задают распределение Orbit, а не измеренную долю рынка РФ."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 8192,
+        "maxCubeMapTextureSize": 8192,
+        "maxRenderbufferSize": 8192,
+        "maxViewportDims": [
+          8192,
+          8192
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "a15_android14",
+      "revision": 1,
+      "name": "Samsung Galaxy A15",
+      "model": "SM-A155F",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "physicalMemoryGb": 6,
+      "browser": {
+        "width": 384,
+        "height": 832,
+        "dpr": 2.8125,
+        "memory": 4,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "ARM",
+        "renderer": "Mali-G57 MC2"
+      },
+      "defaultWeight": 100,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/ru/smartphones/galaxy-a/galaxy-a15-blue-256gb-sm-a155fzbicau/",
+            "scope": "Спецификация производителя: семейство устройства, экран и аппаратная платформа; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет. Веса задают распределение Orbit, а не измеренную долю рынка РФ."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 8192,
+        "maxCubeMapTextureSize": 8192,
+        "maxRenderbufferSize": 8192,
+        "maxViewportDims": [
+          8192,
+          8192
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "poco_x6_pro_android14",
+      "revision": 1,
+      "name": "POCO X6 Pro 5G",
+      "model": "2311DRK48G",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1220,
+        "height": 2712
+      },
+      "renderScreen": {
+        "width": 1220,
+        "height": 2712
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 407,
+        "height": 904,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "ARM",
+        "renderer": "Mali-G615 MC6"
+      },
+      "defaultWeight": 85,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.mi.com/global/product/poco-x6-pro/specs/",
+            "scope": "Спецификация производителя: семейство устройства, экран и аппаратная платформа; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет. Веса задают распределение Orbit, а не измеренную долю рынка РФ."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "s24_android14",
+      "revision": 1,
+      "name": "Samsung Galaxy S24",
+      "model": "SM-S921B",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 780,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 750"
+      },
+      "defaultWeight": 80,
+      "evidence": {
+        "reviewedAt": "2026-10-23",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/uk/smartphones/galaxy-s24/specs/",
+            "scope": "Спецификация производителя: семейство устройства, экран и аппаратная платформа; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "s23_android14",
+      "revision": 2,
+      "name": "Samsung Galaxy S23",
+      "model": "SM-S911B",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 780,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 740"
+      },
+      "defaultWeight": 75,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/ie/support/model/SM-S911BZKDEUB/",
+            "scope": "Справка производителя о семействе устройства; не измерение браузера."
+          }
+        ],
+        "note": "Параметры существующего набора Orbit. DPR, WebGL и браузерные API — настройки эмуляции; замера физического устройства нет. Вариант ОС и памяти относится к этому шаблону, а не ко всем устройствам модели. Лимиты WebGL заданы для эмуляции; измерения физического GPU нет."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "realme_12_pro_plus_android14",
+      "revision": 1,
+      "name": "Realme 12 Pro+ 5G",
+      "model": "RMX3840",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2412
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2412
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 804,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 710"
+      },
+      "defaultWeight": 65,
+      "evidence": {
+        "reviewedAt": "2026-10-23",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.realme.com/global/realme-12-pro-plus/specs",
+            "scope": "Спецификация производителя: семейство устройства, экран и аппаратная платформа; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "realme_11_pro_android14",
+      "revision": 1,
+      "name": "Realme 11 Pro 5G",
+      "model": "RMX3771",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2412
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2412
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 804,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "ARM",
+        "renderer": "Mali-G68 MC4"
+      },
+      "defaultWeight": 60,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.realme.com/global/realme-11-pro/specs",
+            "scope": "Спецификация производителя: семейство устройства, экран и аппаратная платформа; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 14 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет. Веса задают распределение Orbit, а не измеренную долю рынка РФ."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 8192,
+        "maxCubeMapTextureSize": 8192,
+        "maxRenderbufferSize": 8192,
+        "maxViewportDims": [
+          8192,
+          8192
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "pixel8_android15",
+      "revision": 1,
+      "name": "Google Pixel 8",
+      "model": "Pixel 8",
+      "os": "15.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 412,
+        "height": 915,
+        "dpr": 2.625,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "ARM",
+        "renderer": "Mali-G715"
+      },
+      "defaultWeight": 40,
+      "evidence": {
+        "reviewedAt": "2026-10-23",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://support.google.com/pixelphone/answer/7158570",
+            "scope": "Справка производителя о семействе устройства; не измерение браузера."
+          }
+        ],
+        "note": "Вариант Android 15 для эмуляции Orbit. DPR, WebGL, лимиты WebGL и браузерные API заданы для эмуляции; замера физического устройства нет."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "a52_android12",
+      "revision": 2,
+      "name": "Samsung Galaxy A52 4G",
+      "model": "SM-A525F",
+      "os": "12.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "physicalMemoryGb": 4,
+      "browser": {
+        "width": 412,
+        "height": 915,
+        "dpr": 2.625,
+        "memory": 4,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 618"
+      },
+      "defaultWeight": 25,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/ie/support/model/SM-A525FZWGEUB/",
+            "scope": "Справка производителя о семействе устройства; не измерение браузера."
+          }
+        ],
+        "note": "Параметры существующего набора Orbit. DPR, WebGL и браузерные API — настройки эмуляции; замера физического устройства нет. Вариант ОС и памяти относится к этому шаблону, а не ко всем устройствам модели. Лимиты WebGL заданы для эмуляции; измерения физического GPU нет."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "s23_android13",
+      "revision": 2,
+      "name": "Samsung Galaxy S23",
+      "model": "SM-S911B",
+      "os": "13.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 780,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 740"
+      },
+      "defaultWeight": 20,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/ie/support/model/SM-S911BZKDEUB/",
+            "scope": "Справка производителя о семействе устройства; не измерение браузера."
+          }
+        ],
+        "note": "Параметры существующего набора Orbit. DPR, WebGL и браузерные API — настройки эмуляции; замера физического устройства нет. Вариант ОС и памяти относится к этому шаблону, а не ко всем устройствам модели. Лимиты WebGL заданы для эмуляции; измерения физического GPU нет."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    },
+    {
+      "id": "pixel7_android13",
+      "revision": 2,
+      "name": "Google Pixel 7",
+      "model": "Pixel 7",
+      "os": "13.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 412,
+        "height": 915,
+        "dpr": 2.625,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "ARM",
+        "renderer": "Mali-G710"
+      },
+      "defaultWeight": 10,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://support.google.com/pixelphone/answer/7158570",
+            "scope": "Справка производителя о семействе устройства; не измерение браузера."
+          }
+        ],
+        "note": "Параметры существующего набора Orbit. DPR, WebGL и браузерные API — настройки эмуляции; замера физического устройства нет. Вариант ОС и памяти относится к этому шаблону, а не ко всем устройствам модели. Лимиты WebGL заданы для эмуляции; измерения физического GPU нет."
+      },
+      "arch": "arm64",
+      "bitness": "64",
+      "webglLimits": {
+        "maxTextureSize": 16384,
+        "maxCubeMapTextureSize": 16384,
+        "maxRenderbufferSize": 16384,
+        "maxViewportDims": [
+          16384,
+          16384
+        ],
+        "maxVertexAttribs": 16
+      }
+    }
+  ]
+}

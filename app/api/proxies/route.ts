@@ -1,3 +1,6 @@
+import { syncBinding, provider } from "@/utils/proxyTcpStore";
+import { assertProxyCanBeAdded } from "@/lib/proxy-lease";
+import { withAuth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { apiError, json, proxySelect, readBody } from "@/lib/api";
 import { proxyPostSchema } from "@/lib/api-validation";
@@ -5,19 +8,25 @@ import { proxyPostSchema } from "@/lib/api-validation";
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+async function GETHandler() {
   try { return json(await prisma.proxy.findMany({ select: proxySelect, orderBy: { id: "asc" } })); }
   catch (error) { return apiError(error); }
 }
 
-export async function POST(request: Request) {
+async function POSTHandler(request: Request) {
   try {
     const input = proxyPostSchema.parse(await readBody(request));
-    if ("proxies" in input) {
-      // One transaction: a duplicate rolls back the entire batch.
-      const proxies = await prisma.$transaction(input.proxies.map(data => prisma.proxy.create({ data, select: proxySelect })));
-      return json(proxies, 201);
-    }
-    return json(await prisma.proxy.create({ data: input, select: proxySelect }), 201);
+    const providerRows = await prisma.proxyTcpChannel.count() ? await (await provider(prisma)).proxies() : undefined;
+    const items = "proxies" in input ? input.proxies : [input];
+    const result = await prisma.$transaction(async tx => {
+      await tx.$executeRaw`UPDATE "Settings" SET "id"="id" WHERE "id"=1`;
+      const proxies = [];
+      for (const data of items) { const row=await tx.proxy.create({data}); await syncBinding(tx,row.id,providerRows); await assertProxyCanBeAdded(tx,row.id); proxies.push(await tx.proxy.findUniqueOrThrow({where:{id:row.id},select:proxySelect})); }
+      return proxies;
+    });
+    return json("proxies" in input ? result : result[0],201);
   } catch (error) { return apiError(error); }
 }
+
+export const GET = withAuth(GETHandler);
+export const POST = withAuth(POSTHandler);

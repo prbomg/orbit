@@ -1,0 +1,1 @@
+ALTER TABLE "Task" ADD COLUMN "visitSettings" JSONB NOT NULL DEFAULT '{}';

@@ -1,20 +1,25 @@
 "use client";
+import type { VisitSettings } from "@/utils/visitSettings";
 import type { Project } from "@/lib/projects";
+import type { SessionMetadata } from "@/lib/profile-readiness";
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 
 export type TaskStatus = "running" | "paused" | "completed" | "failed";
+export type TaskRetryState = { count?: number; code?: string; type?: string; retryAfter?: string | null; recovery?: 'rotate_proxy' | 'replace_proxy' };
 export type TaskType = "warmup" | "target";
 export type SearchEngine = "yandex" | "mail" | "dzen";
-export type SearchFields = { searchEngine: SearchEngine; searchQueries: string[]; vitalPhrases: string[] };
-export type Profile = { id: string; name: string; createdAt: string; status: "new" | "warming_up" | "ready" | "banned"; warmupScore: number; isEnabled: boolean; session?: { state: string; savedAt: string | null; mobileOS: string | null; cookiesCount: number; originsCount: number } };
-export type Task = { id: string; taskType: TaskType; searchEngine: SearchEngine | ""; searchQueries: string[]; vitalPhrases: string[]; projectId: string | null; project: Project | null; targetExecutions: number; profileId: string; profile: Profile; url: string; targetKeywords: string[]; status: TaskStatus; currentExecutions: number; createdAt: string };
-export type TaskInput = { taskType: TaskType; url: string; targetKeywords: string[]; searchEngine: SearchEngine | ""; searchQueries: string[]; vitalPhrases: string[]; projectId?: string | null; targetExecutions: number; profileId?: string; status: TaskStatus };
-export type Proxy = { id: string; host: string; port: number; username: string; isActive: boolean; rotationUrl: string | null };
-export type ProxyInput = Omit<Proxy, "id" | "rotationUrl"> & { password: string; rotationUrl?: string | null };
-export type SystemState = { workerState: "running" | "stopped" | "stale" | "unknown"; projectRun: { state: string; projectId: string; taskId?: string | null; event?: string; errorType?: string | null } | null; checkedAt: string; headless: boolean; proxyScheme: string; planMode: "local" | "openai"; directVisitSeconds: number[]; searchVisitSeconds: number[]; rotationWaitSeconds: number; mobileDevices: string[]; captchaProvider: string };
+export type SearchFields = { searchDepth: number; searchEngine: SearchEngine; searchQueries: string[]; vitalPhrases: string[] };
+export type Profile = { id: string; name: string; createdAt: string; status: "new" | "queued" | "warming_up" | "ready" | "failed" | "banned"; warmedAt?: string | null; warmupScore: number; isEnabled: boolean; session?: SessionMetadata };
+export type Task = { name?: string | null; searchDepth: number; retryState?: TaskRetryState; visitSettings:Partial<VisitSettings>; id: string; taskType: TaskType; searchEngine: SearchEngine | ""; searchQueries: string[]; vitalPhrases: string[]; projectId: string | null; project: Project | null; targetExecutions: number; dailyExecutionLimit?: number | null; concurrency: number; currentExecutions: number; dailyExecutionsToday?: number; dailyReservedToday?: number; nextExecutionAt?: string | null; dailyWaitReason?: string | null; executions?: {status:string;profileId:string}[]; profileId: string | null; profile: Profile | null; url: string; targetKeywords: string[]; status: TaskStatus; createdAt: string };
+export type TaskInput = { name?: string; searchDepth?: number; visitSettings?:VisitSettings; taskType: TaskType; url: string; targetKeywords: string[]; searchEngine: SearchEngine | ""; searchQueries: string[]; vitalPhrases: string[]; projectId?: string | null; targetExecutions: number; dailyExecutionLimit?: number | null; concurrency: number; profileId?: string; status: TaskStatus };
+export type Proxy = { tcpChannelId?: string | null; tcpChannel?: {profileName:string;status:string;family:string;checkedAt:string|null} | null; id: string; host: string; port: number; username: string; isActive: boolean; rotationUrl: string | null; channel?: string; purpose?: "shared" | "warmup" | "target" };
+export type ProxyInput = Omit<Proxy, "id" | "rotationUrl" | "tcpChannel" | "tcpChannelId"> & { password: string; rotationUrl?: string | null };
+export type ProjectRunState = { state: string; projectId: string; taskId?: string | null; event?: string; errorType?: string | null; waitReason?: string | null };
+export type SystemState = { projectRuns?: ProjectRunState[]; activeProjectCount?: number; workerState: "running" | "stopped" | "stale" | "unknown"; projectRun: { state: string; projectId: string; taskId?: string | null; event?: string; errorType?: string | null; waitReason?: string | null } | null; checkedAt: string; headless: boolean; proxyScheme: string; planMode: "local" | "openai"; directVisitSeconds: number[]; searchVisitSeconds: number[]; rotationWaitSeconds: number; mobileDevices: string[]; captchaProvider: string };
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(path, { ...options, cache: "no-store", headers: { "Content-Type": "application/json", ...options.headers } });
+  if (response.status === 401) { window.location.replace("/login/"); throw new Error("Сессия завершена. Войдите снова."); }
   if (response.status === 204) return undefined as T;
   const body = await response.json().catch(() => null);
   if (!response.ok) throw new Error(body?.details?.map((item: { message: string }) => item.message).join(" · ") || body?.error || `Ошибка запроса (${response.status})`);
@@ -63,7 +68,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   return <DataContext.Provider value={{ tasks, profiles, proxies, system, lastUpdated, loading, error, pendingIds, refresh,
     saveTask: (data, id) => operation(id ?? "new-task", () => request<Task>(id ? `/api/tasks/${id}/` : "/api/tasks/", { method: id ? "PATCH" : "POST", body: JSON.stringify(data) }), task => {
       setTasks(prev => id ? prev.map(item => item.id === id ? task : item) : [task, ...prev]);
-      setProfiles(prev => prev.some(profile => profile.id === task.profileId) ? prev : [task.profile, ...prev]);
+      if (task.profile) setProfiles(prev => prev.some(profile => profile.id === task.profileId) ? prev : [task.profile!, ...prev]);
     }), setTaskStatus,
     toggleTask: async id => { const task = tasks.find(item => item.id === id); if (task) await setTaskStatus(id, task.status === "running" ? "paused" : "running").catch(() => {}); },
     removeTask: id => operation(id, () => request<void>(`/api/tasks/${id}/`, { method: "DELETE" }), () => setTasks(prev => prev.filter(item => item.id !== id))).catch(() => {}),

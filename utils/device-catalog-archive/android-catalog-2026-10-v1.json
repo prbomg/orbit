@@ -1,0 +1,161 @@
+{
+  "version": "android-catalog-2026-10-v1",
+  "templates": [
+    {
+      "id": "s23_android13",
+      "revision": 1,
+      "name": "Samsung Galaxy S23",
+      "model": "SM-S911B",
+      "os": "13.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 780,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 740"
+      },
+      "defaultWeight": 1,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/ie/support/model/SM-S911BZKDEUB/",
+            "scope": "Справка производителя о семействе устройства; не измерение браузера."
+          }
+        ],
+        "note": "Параметры существующего набора Orbit. DPR, WebGL и браузерные API — настройки эмуляции; замера физического устройства нет. Вариант ОС и памяти относится к этому шаблону, а не ко всем устройствам модели."
+      }
+    },
+    {
+      "id": "pixel7_android13",
+      "revision": 1,
+      "name": "Google Pixel 7",
+      "model": "Pixel 7",
+      "os": "13.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 412,
+        "height": 915,
+        "dpr": 2.625,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "ARM",
+        "renderer": "Mali-G710"
+      },
+      "defaultWeight": 1,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://support.google.com/pixelphone/answer/7158570",
+            "scope": "Справка производителя о семействе устройства; не измерение браузера."
+          }
+        ],
+        "note": "Параметры существующего набора Orbit. DPR, WebGL и браузерные API — настройки эмуляции; замера физического устройства нет. Вариант ОС и памяти относится к этому шаблону, а не ко всем устройствам модели."
+      }
+    },
+    {
+      "id": "a52_android12",
+      "revision": 1,
+      "name": "Samsung Galaxy A52 4G",
+      "model": "SM-A525F",
+      "os": "12.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2400
+      },
+      "physicalMemoryGb": 4,
+      "browser": {
+        "width": 412,
+        "height": 915,
+        "dpr": 2.625,
+        "memory": 4,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 618"
+      },
+      "defaultWeight": 1,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/ie/support/model/SM-A525FZWGEUB/",
+            "scope": "Справка производителя о семействе устройства; не измерение браузера."
+          }
+        ],
+        "note": "Параметры существующего набора Orbit. DPR, WebGL и браузерные API — настройки эмуляции; замера физического устройства нет. Вариант ОС и памяти относится к этому шаблону, а не ко всем устройствам модели."
+      }
+    },
+    {
+      "id": "s23_android14",
+      "revision": 1,
+      "name": "Samsung Galaxy S23",
+      "model": "SM-S911B",
+      "os": "14.0.0",
+      "physicalScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "renderScreen": {
+        "width": 1080,
+        "height": 2340
+      },
+      "physicalMemoryGb": 8,
+      "browser": {
+        "width": 360,
+        "height": 780,
+        "dpr": 3,
+        "memory": 8,
+        "cpu": 8,
+        "touch": 5,
+        "vendor": "Qualcomm",
+        "renderer": "Adreno (TM) 740"
+      },
+      "defaultWeight": 0,
+      "evidence": {
+        "reviewedAt": "2026-10-14",
+        "status": "emulation",
+        "measuredAt": null,
+        "sources": [
+          {
+            "url": "https://www.samsung.com/ie/support/model/SM-S911BZKDEUB/",
+            "scope": "Справка производителя о семействе устройства; не измерение браузера."
+          }
+        ],
+        "note": "Параметры существующего набора Orbit. DPR, WebGL и браузерные API — настройки эмуляции; замера физического устройства нет. Вариант ОС и памяти относится к этому шаблону, а не ко всем устройствам модели."
+      }
+    }
+  ]
+}

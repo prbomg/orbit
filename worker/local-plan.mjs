@@ -3,9 +3,10 @@ import { parseActionPlan } from './ai-plan.mjs';
 
 /** A bounded browser QA sequence generated locally, without an API request. */
 export function generateLocalActionPlan(maxDurationMs, log = () => {}, taskId) {
-  const count = randomInt(10, 15);
   const shortRun = maxDurationMs < 20_000;
-  const scroll = type => ({ type, pixels: randomInt(150, 850) });
+  // Short QA runs cannot fit many long native gestures in their hard deadline.
+  const count = shortRun ? 10 : randomInt(10, 15);
+  const scroll = type => ({ type, pixels: randomInt(150, shortRun ? 220 : 850) });
   const move = () => ({ type: 'move_mouse_randomly', durationMs: randomInt(100, shortRun ? 180 : 800) });
   const actions = [scroll('scroll_down'), move(), scroll('scroll_up')];
   for (let index = actions.length; index < count; index++) {

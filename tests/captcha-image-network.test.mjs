@@ -4,11 +4,58 @@ import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { chromium } from 'playwright';
 import { detectYandexImagePuzzle, solveYandexImagePuzzle, startCaptchaImageCapture } from '../worker/captcha-image.mjs';
+import { createCaptchaHandler } from '../worker/captcha-page.mjs';
+import { restrictNavigation } from '../worker/action-executor.mjs';
 
 const mainImage = readFileSync(new URL('./fixtures/captcha-main.png', import.meta.url));
 const instructionImage = readFileSync(new URL('./fixtures/captcha-instruction.png', import.meta.url));
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const close = server => new Promise(resolve => server.close(resolve));
+
+for (const ignoredTap of [false, true]) test(`verification submission handles ${ignoredTap ? 'an ignored tap without another paid solution' : 'a rejected POST with fresh GET instead of resubmission'}`, async () => {
+  let paid = 0, posts = 0, gets = 0;
+  const provider = createServer((request, response) => {
+    response.setHeader('content-type', 'application/json');
+    if (request.url === '/createTask') {
+      request.resume();request.on('end', () => response.end(JSON.stringify({ errorId: 0, taskId: ++paid })));
+    } else response.end(JSON.stringify({ errorId: 0, status: 'ready', solution: { coordinates: [{ x: 80, y: 90 }] } }));
+  });
+  await listen(provider);let browser;
+  try {
+    browser = await chromium.launch({ headless: true });
+    const context = await browser.newContext({ isMobile: true, hasTouch: true, viewport: { width: 390, height: 844 } });
+    await context.route('https://ya.ru/showcaptcha', route => {
+      if (route.request().method() === 'POST') {
+        posts++;
+        return route.fulfill({ contentType: 'text/html', body: posts === 1 && !ignoredTap ? '<h1>Проверка не завершена</h1>' : '<script>location.replace("/search/")</script>' });
+      }
+      gets++;
+      return route.fulfill({ contentType: 'text/html', body: `<meta name="viewport" content="width=device-width,initial-scale=1">
+        <form method="post" action="/showcaptcha"><div style="position:relative;width:240px;height:135px">
+        <img src="data:image/png;base64,${mainImage.toString('base64')}" style="width:240px;height:135px">
+        <div style="position:absolute;inset:0" onclick="window.pointReceived=true"></div></div>
+        <img src="data:image/png;base64,${instructionImage.toString('base64')}" style="width:120px;height:20px">
+        <button type="submit" ${ignoredTap ? 'onclick="window.taps=(window.taps||0)+1;if(window.taps===1)event.preventDefault()"' : ''}>Подтвердить</button></form>` });
+    });
+    await context.route('https://ya.ru/search/', route => route.fulfill({ contentType: 'text/html', body: '<h1>Results</h1>' }));
+    const page = await context.newPage();await page.goto('https://ya.ru/showcaptcha');
+    page.reload = () => { assert.fail('A verification POST must not be repeated by reload'); };
+    const endpoint = `http://127.0.0.1:${provider.address().port}`;
+    const events = [];
+    const check = createCaptchaHandler({ prisma: { settings: { findUnique: async () => ({ rucaptchaApiKey: 'synthetic-key' }) } },
+      config: { captchaWidgetWaitMs: 500, captchaMaxSolves: 2, captchaV2BaseUrl: endpoint, captchaPollingMs: 20, captchaTimeoutMs: 5000, navigationTimeoutMs: 800 },
+      shouldContinue: async () => true, taskId: 'fixture', log: (event, details) => events.push({ event, ...details }),
+      navigationPolicy: await restrictNavigation(context, 'https://ya.ru') });
+    assert.equal(await check(page), true);
+    assert.equal(await check(page), false);
+    assert.equal(page.url(), 'https://ya.ru/search/');
+    assert.equal(gets, ignoredTap ? 1 : 2);assert.equal(posts, ignoredTap ? 1 : 2);assert.equal(paid, ignoredTap ? 1 : 2);
+    if (ignoredTap) {
+      assert.ok(events.some(row => row.event === 'captcha_submitting' && row.attempt === 2 && row.reason === 'no_response'));
+      assert.ok(!events.some(row => row.event === 'captcha_retrying'));
+    } else assert.ok(events.some(row => row.event === 'captcha_retrying' && row.code === 'submission_rejected'));
+  } finally { await browser?.close();await close(provider); }
+});
 
 for (const scenario of ['redirect', 'fragment', 'history', 'reload', 'no-content', 'iframe', 'many-images']) {
   test(`Original captcha image responses survive ${scenario}`, async () => {

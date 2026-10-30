@@ -1,11 +1,16 @@
 export type Project = {
+  geolocation?: { mode: 'off' } | { mode: 'region'; radiusKm?: number } | { mode: 'manual'; latitude: number; longitude: number; radiusKm: number };
   id: string;
+  archivedAt: string | null;
   name: string;
   targetUrl: string;
   yandexRegionId: string;
   regionName: string;
+  scheduleHours: string;
+  scheduleTimezone: string;
   createdAt: string;
   updatedAt: string;
+  pool?: { available: number; remaining: number; deficit: number };
   _count?: { tasks: number; profileUses: number; profileHistory?: number };
   profileHistory?: { id: string; profileId: string; executedAt: string; source: string; profile: { id: string; name: string } }[];
 };

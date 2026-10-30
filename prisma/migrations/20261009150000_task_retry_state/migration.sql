@@ -1,0 +1,2 @@
+ALTER TABLE "Task" ADD COLUMN "retryState" JSONB NOT NULL DEFAULT '{}';
+ALTER TABLE "TaskExecution" ADD COLUMN "proxyId" TEXT;

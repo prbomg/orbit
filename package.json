@@ -8,6 +8,11 @@
     "typecheck": "tsc --noEmit",
     "start": "next start --hostname 127.0.0.1",
     "db:generate": "prisma generate",
+    "auth:user": "node --env-file=.env scripts/auth-user.mjs",
+    "proxy:check": "node scripts/check-proxy.mjs",
+    "test:proxy-ip": "node --test tests/proxy-ip.test.mjs tests/proxy-rotation.test.mjs",
+    "test:auth": "node --test tests/auth.test.mjs",
+    "test:gestures": "node --test tests/touch-trajectory.test.mjs tests/mobile-input.test.mjs tests/tap-target.test.mjs tests/scroll-surface.test.mjs tests/scroll-inertia.test.mjs tests/action-results.test.mjs",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
     "db:seed": "node --env-file=.env prisma/seed.mjs",
@@ -18,7 +23,13 @@
     "worker": "node worker/index.js",
     "worker:once": "node worker/index.js --once",
     "worker:install": "playwright install chromium",
-    "test:worker": "node --test tests/worker.test.mjs tests/profiles.test.mjs tests/warmup.test.mjs tests/search.test.mjs tests/target-visit.test.mjs"
+    "test:worker": "node --test tests/worker.test.mjs tests/profiles.test.mjs tests/session-state.test.mjs tests/proxy-rotation.test.mjs tests/warmup.test.mjs tests/warmup-recovery.test.mjs tests/search.test.mjs tests/search-refinement-recovery.test.mjs tests/search-overlays.test.mjs tests/target-visit.test.mjs tests/mobile-input.test.mjs",
+    "worker:warmup": "node worker/warmup-service.mjs",
+    "test:pool": "node --test tests/pool.test.mjs tests/warmup-parallel.test.mjs",
+    "test:fingerprint": "node --test tests/fingerprint.test.mjs tests/api-behavior.test.mjs tests/profile-quality-presentation.test.mjs tests/battery-state.test.mjs tests/motion.test.mjs tests/context-matrix.test.mjs tests/worker-passport.test.mjs tests/canvas-consistency.test.mjs tests/native-canvas-cohort.test.mjs",
+    "test:persistent-storage": "node --test tests/persistent-cache.test.mjs tests/profile-reliability.test.mjs tests/profile-publication.test.mjs",
+    "profiles:audit": "node scripts/verify-profile-runtime.mjs",
+    "test:tcp": "node --test tests/proxy-tcp.test.mjs tests/warmup-parallel.test.mjs"
   },
   "dependencies": {
     "2captcha": "npm:@2captcha/captcha-solver@^1.3.9",
@@ -37,6 +48,8 @@
     "react-dom": "^19.2.0",
     "server-only": "0.0.1",
     "tailwind-merge": "^3.0.0",
+    "tldts": "7.4.18",
+    "yazl": "3.3.1",
     "zod": "3.25.76"
   },
   "devDependencies": {

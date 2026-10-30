@@ -4,6 +4,9 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  playwright-core@1.63.0: 283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90
+
 importers:
 
   .:
@@ -37,10 +40,10 @@ importers:
         version: 1.63.0
       playwright-extra:
         specifier: 4.3.6
-        version: 4.3.6(playwright-core@1.63.0)(playwright@1.63.0)
+        version: 4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0)
       puppeteer-extra-plugin-stealth:
         specifier: 2.11.2
-        version: 2.11.2(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0))
+        version: 2.11.2(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0))
       radix-ui:
         specifier: ^1.4.0
         version: 1.6.7(@types/react-dom@19.3.0(@types/react@19.3.0))(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
@@ -56,6 +59,12 @@ importers:
       tailwind-merge:
         specifier: ^3.0.0
         version: 3.7.0
+      tldts:
+        specifier: 7.4.18
+        version: 7.4.18
+      yazl:
+        specifier: 3.3.1
+        version: 3.3.1
       zod:
         specifier: 3.25.76
         version: 3.25.76
@@ -1212,6 +1221,10 @@ packages:
     engines: {node: ^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7}
     hasBin: true
 
+  buffer-crc32@1.0.0:
+    resolution: {integrity: sha512-Db1SbgBS/fg/392AblrMJk97KggmvYhr4pB5ZIMTWtaivCPMWLkmb7m21cJvpvgK+J3nsU2CmmixNBZx4vFj/w==}
+    engines: {node: '>=8.0.0'}
+
   c12@3.1.0:
     resolution: {integrity: sha512-uWoS8OU1MEIsOv8p/5a82c3H31LsWVR5qiyXVfBNOzfffjUWtPnhAb4BYI2uG2HfGmZmFjCtui5XNWaps+iFuw==}
     peerDependencies:
@@ -1819,6 +1832,13 @@ packages:
     resolution: {integrity: sha512-GCvB3aoys96IuDFBMcTB46JOR6mdMtAToqwiW8JlWhsoh1mhHi/xn9ss/Dg7N555GiJyEt2qzoG/NHCwM6h1EA==}
     engines: {node: '>=18'}
 
+  tldts-core@7.4.18:
+    resolution: {integrity: sha512-KI2PKvCmvQI/xD6ypPqkU0i7oxNXR/O58RLRaHR4svsgVUQ2JE/XC8BtMbG6PSehD27I8sZJRcC1ASnCy6lp3g==}
+
+  tldts@7.4.18:
+    resolution: {integrity: sha512-somxA8xKAUzlAxl0TX/jMSYIbRNFIVGnI96pVGJPeMc5BsHmfVXn6mOJT6U++ELnl04eGfzpfcEuZe8WiASkXg==}
+    hasBin: true
+
   tr46@0.0.3:
     resolution: {integrity: sha512-N3WMsuqV66lT30CrXNbEjx4GEwlow3v6rr4mCcv6prnfwhS01rkgyFdjPNBYd9br7LpXV1+Emh01fHnq2Gdgrw==}
 
@@ -1878,6 +1898,9 @@ packages:
 
   wrappy@1.0.2:
     resolution: {integrity: sha512-l4Sp/DRseor9wL6EvV2+TuQn63dMkPjZ/sp9XkghTEbV9KlPS1xUsZ3u7/IQO4wxtcFB4bgpQPRcR3QCvezPcQ==}
+
+  yazl@3.3.1:
+    resolution: {integrity: sha512-BbETDVWG+VcMUle37k5Fqp//7SDOK2/1+T7X8TD96M3D9G8jK5VLUdQVdVjGi8im7FGkazX7kk5hkU8X4L5Bng==}
 
   zod@3.25.76:
     resolution: {integrity: sha512-gzUt/qt81nXsFGKIFcC3YnfEAx5NkunCfnDlvuBSSFS02bcXu4Lmea0AFIUwbLWxWPx3d9p8S5QoaujKcNQxcQ==}
@@ -2968,6 +2991,8 @@ snapshots:
       node-releases: 2.0.57
       update-browserslist-db: 1.3.3(browserslist@4.29.1)
 
+  buffer-crc32@1.0.0: {}
+
   c12@3.1.0:
     dependencies:
       chokidar: 4.0.3
@@ -3314,20 +3339,20 @@ snapshots:
       exsolve: 1.1.1
       pathe: 2.0.3
 
-  playwright-core@1.63.0: {}
+  playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90): {}
 
-  playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0):
+  playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0):
     dependencies:
       debug: 4.4.3
     optionalDependencies:
       playwright: 1.63.0
-      playwright-core: 1.63.0
+      playwright-core: 1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90)
     transitivePeerDependencies:
       - supports-color
 
   playwright@1.63.0:
     dependencies:
-      playwright-core: 1.63.0
+      playwright-core: 1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90)
 
   postcss@8.5.23:
     dependencies:
@@ -3350,45 +3375,45 @@ snapshots:
     transitivePeerDependencies:
       - magicast
 
-  puppeteer-extra-plugin-stealth@2.11.2(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0)):
+  puppeteer-extra-plugin-stealth@2.11.2(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0)):
     dependencies:
       debug: 4.4.3
-      puppeteer-extra-plugin: 3.2.3(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0))
-      puppeteer-extra-plugin-user-preferences: 2.4.1(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0))
+      puppeteer-extra-plugin: 3.2.3(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0))
+      puppeteer-extra-plugin-user-preferences: 2.4.1(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0))
     optionalDependencies:
-      playwright-extra: 4.3.6(playwright-core@1.63.0)(playwright@1.63.0)
+      playwright-extra: 4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0)
     transitivePeerDependencies:
       - supports-color
 
-  puppeteer-extra-plugin-user-data-dir@2.4.1(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0)):
+  puppeteer-extra-plugin-user-data-dir@2.4.1(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0)):
     dependencies:
       debug: 4.4.3
       fs-extra: 10.1.0
-      puppeteer-extra-plugin: 3.2.3(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0))
+      puppeteer-extra-plugin: 3.2.3(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0))
       rimraf: 3.0.2
     optionalDependencies:
-      playwright-extra: 4.3.6(playwright-core@1.63.0)(playwright@1.63.0)
+      playwright-extra: 4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0)
     transitivePeerDependencies:
       - supports-color
 
-  puppeteer-extra-plugin-user-preferences@2.4.1(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0)):
+  puppeteer-extra-plugin-user-preferences@2.4.1(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0)):
     dependencies:
       debug: 4.4.3
       deepmerge: 4.3.1
-      puppeteer-extra-plugin: 3.2.3(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0))
-      puppeteer-extra-plugin-user-data-dir: 2.4.1(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0))
+      puppeteer-extra-plugin: 3.2.3(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0))
+      puppeteer-extra-plugin-user-data-dir: 2.4.1(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0))
     optionalDependencies:
-      playwright-extra: 4.3.6(playwright-core@1.63.0)(playwright@1.63.0)
+      playwright-extra: 4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0)
     transitivePeerDependencies:
       - supports-color
 
-  puppeteer-extra-plugin@3.2.3(playwright-extra@4.3.6(playwright-core@1.63.0)(playwright@1.63.0)):
+  puppeteer-extra-plugin@3.2.3(playwright-extra@4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0)):
     dependencies:
       '@types/debug': 4.1.13
       debug: 4.4.3
       merge-deep: 3.0.3
     optionalDependencies:
-      playwright-extra: 4.3.6(playwright-core@1.63.0)(playwright@1.63.0)
+      playwright-extra: 4.3.6(playwright-core@1.63.0(patch_hash=283a1cd628e3518d498afed69285eae20dc03ff7e541ced4b8ff1b56950c4a90))(playwright@1.63.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -3565,6 +3590,12 @@ snapshots:
 
   tinyexec@1.3.1: {}
 
+  tldts-core@7.4.18: {}
+
+  tldts@7.4.18:
+    dependencies:
+      tldts-core: 7.4.18
+
   tr46@0.0.3: {}
 
   tslib@2.8.1: {}
@@ -3608,5 +3639,9 @@ snapshots:
       webidl-conversions: 3.0.1
 
   wrappy@1.0.2: {}
+
+  yazl@3.3.1:
+    dependencies:
+      buffer-crc32: 1.0.0
 
   zod@3.25.76: {}

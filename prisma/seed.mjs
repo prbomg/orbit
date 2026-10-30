@@ -6,7 +6,7 @@ try {
     ['sample-task-1', 'https://example.com/catalog', ['каталог', 'цена'], 'running'],
     ['sample-task-2', 'https://demo.playwright.dev/todomvc', ['todo'], 'paused'],
     ['sample-task-3', 'https://example.org/data', ['данные'], 'running'],
-  ]) await prisma.task.upsert({ where: { id }, update: {}, create: { id, url, targetKeywords, status, project: { create: { name: `Демо ${id}`, targetUrl: url, yandexRegionId: "213", regionName: "" } }, profile: { create: { name: `Демо ${id}` } } } });
+  ]) await prisma.task.upsert({ where: { id }, update: {}, create: { id, url, targetKeywords, status, project: { create: { name: `Демо ${id}`, targetUrl: url, yandexRegionId: "213", regionName: "" } } } });
   for (const [id, host, port, username] of [
     ['sample-proxy-1', '192.0.2.14', 8000, 'sample_us'],
     ['sample-proxy-2', '198.51.100.28', 8080, 'sample_de'],

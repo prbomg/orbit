@@ -4,7 +4,7 @@ import { chromium } from 'playwright';
 import { submitSearch } from '../worker/search.mjs';
 
 test('clicks the visible Find button when Enter is ignored by the form', async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
   try {
     const context = await browser.newContext();
     await context.route('http://search.test/**', route => {
@@ -24,7 +24,7 @@ test('clicks the visible Find button when Enter is ignored by the form', async (
 });
 
 test('uses Enter when a search form has no submit button', async () => {
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({ headless: true, ...(process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH } : {}) });
   try {
     const context = await browser.newContext();
     await context.route('http://search.test/**', route => {

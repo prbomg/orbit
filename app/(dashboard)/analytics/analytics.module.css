@@ -1,0 +1,30 @@
+.page { display: grid; gap: 18px; min-width: 0; }
+.page > * { min-width: 0; }
+.page :global(.page-heading) { margin-bottom: 0; }
+.page :global(.diagnostic-metrics), .page :global(.diagnostic-coverage) { margin-bottom: 0; }
+.page :global(.diagnostic-two-columns ~ .panel) { margin-top: 0; }
+.page :global(.panel-heading) { flex-wrap: wrap; gap: 12px; }
+.page :global(.panel-heading > div), .page :global(.stat-card) { min-width: 0; }
+.page :global(.diagnostic-ranked > div > span) { min-width: 0; overflow-wrap: anywhere; }
+.page :global(.diagnostic-table-wrap) { overscroll-behavior-x: contain; }
+.page :global(.diagnostic-table-wrap td) { overflow-wrap: anywhere; max-width: 320px; }
+.filters { display: grid; grid-template-columns: auto minmax(220px, 1fr) auto; align-items: end; gap: 16px; padding: 18px 20px; }
+.field { display: grid; gap: 7px; min-width: 0; }
+.label { color: var(--muted-foreground); font-size: 12px; }
+.period { display: flex; flex-wrap: wrap; gap: 6px; }
+.range { grid-column: 1 / -1; color: var(--muted-foreground); font-size: 12px; }
+.ipFooter { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; padding: 12px 20px 18px; border-top: 1px solid var(--border); }
+.ipFooter span { color: var(--muted-foreground); font-size: 12px; }
+@media (max-width: 900px) {
+  .filters { grid-template-columns: minmax(0, 1fr) auto; }
+  .filters > .field:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 480px) {
+  .filters { grid-template-columns: minmax(0, 1fr); padding: 16px; }
+  .filters > button { justify-self: start; }
+  .page :global(.diagnostic-table-wrap) { padding-left: 12px; padding-right: 12px; }
+  .ipFooter { padding: 12px 16px; }
+}
+.tabs, .sections { display: flex; flex-wrap: wrap; gap: 6px; padding: 5px; border: 1px solid var(--border); border-radius: 10px; width: fit-content; max-width: 100%; }
+.tabs button, .sections button { white-space: normal; height: auto; min-height: 36px; text-align: left; }
+.scope { margin: 0; font-size: 13px; color: var(--muted-foreground); max-width: 85ch; line-height: 1.6; }

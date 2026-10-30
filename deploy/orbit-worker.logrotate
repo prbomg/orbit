@@ -1,0 +1,9 @@
+/var/lib/orbit/runtime/project-worker.log {
+    size 10M
+    rotate 5
+    compress
+    missingok
+    notifempty
+    copytruncate
+    su www-data www-data
+}

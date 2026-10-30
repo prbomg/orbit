@@ -7,16 +7,16 @@ import { DatabaseSync } from 'node:sqlite';
 import { PrismaClient } from '@prisma/client';
 import lifecycle from '../utils/taskLifecycle.js';
 
-async function migrationScripts() {
+async function migrationScripts(through) {
   const root = new URL('../prisma/migrations/', import.meta.url);
-  const names = (await readdir(root)).filter(name => /^\d/.test(name)).sort();
+  const names = (await readdir(root)).filter(name => /^\d/.test(name) && (!through || name <= through)).sort();
   return Promise.all(names.map(name => readFile(new URL(`${name}/migration.sql`, root), 'utf8')));
 }
 
 test('architecture migration preserves counts, disabled profiles, project links and actual usage', async () => {
   const db = new DatabaseSync(':memory:');
   try {
-    const scripts = await migrationScripts();
+    const scripts = await migrationScripts("20260929020000_task_project_architecture");
     for (const sql of scripts.slice(0, -1)) db.exec(sql);
     db.exec(`INSERT INTO Profile(id,name,status,warmedAt) VALUES ('legacy-profile','Fixture','paused',CURRENT_TIMESTAMP);
       INSERT INTO Task(id,profileId,url,executionsCount) VALUES ('legacy-task','legacy-profile','https://example.test/legacy',7);

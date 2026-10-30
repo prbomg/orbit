@@ -7,21 +7,49 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model AuthUser {
+  id String @id @default(cuid())
+  email String @unique
+  passwordHash String
+  sessions AuthSession[]
+}
+
+model AuthSession {
+  tokenHash String @id
+  userId String
+  user AuthUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  @@index([expiresAt])
+}
+
+model AuthThrottle {
+  id String @id
+  attempts Int
+  resetAt BigInt
+}
+
 model Task {
+  name            String?
   id              String   @id @default(cuid())
   projectId       String?
   project         Project? @relation(fields: [projectId], references: [id], onDelete: Restrict)
   targetExecutions Int @default(1)
   currentExecutions Int @default(0)
+  concurrency     Int @default(1)
+  dailyExecutionLimit Int?
+  retryState      Json @default("{}")
+  dailyPlans      TaskDailyPlan[]
   yandexRegionId  Int?
   executions      TaskExecution[]
   projectUses     ProjectProfileUse[]
-  profileId       String
-  profile         Profile  @relation(fields: [profileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
+  profileId       String?
+  profile         Profile? @relation(fields: [profileId], references: [id], onDelete: Restrict, onUpdate: Cascade)
   taskType        String   @default("target")
   searchEngine    String   @default("")
+  searchDepth     Int      @default(3)
   searchQueries   Json     @default("[]")
   vitalPhrases    Json     @default("[]")
+  visitSettings   Json     @default("{}")
   url             String   @default("")
   targetKeywords  Json     @default("[]")
   status          String   @default("running")
@@ -33,21 +61,103 @@ model Task {
   @@index([projectId])
 }
 
+model TaskDailyPlan {
+  id String @id @default(cuid())
+  taskId String
+  task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  dayKey String
+  settingsKey String
+  baseCount Int @default(0)
+  slots Json
+  createdAt DateTime @default(now())
+  @@unique([taskId, dayKey])
+}
+
 model Profile {
+  snapshotId String?
+  storageResetRequested Boolean @default(false)
   id        String   @id @default(uuid())
   name      String
   createdAt DateTime @default(now())
   status    String   @default("new")
   warmupScore Int @default(0)
   isEnabled Boolean @default(true)
+  deletedAt DateTime?
   tasks     Task[]
   warmedAt  DateTime?
   executions TaskExecution[]
   projectUses ProjectProfileUse[]
   projectHistory ProfileProjectHistory[]
+  warmupJob WarmupJob?
+  warmupEvents ProfileWarmupEvent[]
+  fingerprint Json?
+  fingerprintHash String? @unique
+  fingerprintState String @default("pending")
+  fingerprintMeasurements FingerprintMeasurement[]
+  fingerprintCheck Json?
+  sessionCheck     Json?
+  readinessVersion Int @default(0)
+  readinessVerifiedAt DateTime?
+  readinessValidUntil DateTime?
+  storageMode String @default("snapshot")
+  @@index([deletedAt])
+}
+
+model WarmupJob {
+  id String @id @default(cuid())
+  profileId String @unique
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  status String @default("queued")
+  attempts Int @default(0)
+  stage String @default("queued")
+  progress Int @default(0)
+  currentStage Int @default(1)
+  totalStages Int @default(6)
+  plan Json?
+  firstSessionAt DateTime?
+  minReadyAt DateTime?
+  dependencySince DateTime?
+  dependencyRetries Int @default(0)
+  errorCode String?
+  retryAfter DateTime?
+  nextStageAt DateTime?
+  owner String?
+  startedAt DateTime?
+  completedAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([status, retryAfter])
+}
+
+model WorkflowLease {
+  key String @id
+  owner String
+  expiresAt DateTime
+  @@index([owner])
+  @@index([expiresAt])
+}
+
+model ProfileWarmupEvent {
+  id Int @id @default(autoincrement())
+  profileId String
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  jobId String?
+  runId String?
+  stage Int?
+  attempt Int?
+  proxyId String?
+  proxyLabel String?
+  event String
+  details Json @default("{}")
+  createdAt DateTime @default(now())
+  @@index([profileId, id])
+  @@index([createdAt, id])
+  @@index([proxyLabel, createdAt, id])
+  @@index([event, createdAt, id])
 }
 
 model Proxy {
+  fingerprintBinding Json?
   id       String  @id @default(cuid())
   host     String
   port     Int
@@ -55,22 +165,54 @@ model Proxy {
   password String
   isActive Boolean @default(true)
   rotationUrl String?
+  channel String @default("")
+  purpose String @default("shared")
+
+  tcpChannelId String?
+  tcpChannel ProxyTcpChannel? @relation(fields: [tcpChannelId], references: [id], onDelete: SetNull)
 
   @@unique([host, port, username])
 }
 
 model Settings {
   id              Int      @id @default(1)
+  capguruApiKey String?
+  captchaPrimary String @default("rucaptcha")
+  captchaFallbackAfter Int @default(2)
   rucaptchaApiKey  String?
   openaiApiKey    String?
   autoReplenishEnabled Boolean @default(false)
   minReadyProfiles Int @default(100)
   replenishBatchSize Int @default(100)
+  warmupEnabled Boolean @default(true)
+  warmupScheduleHours String @default("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111" )
+  warmupScheduleTimezone String @default("Europe/Moscow")
+  warmupConcurrency Int @default(1)
+  warmupSharedProxy Boolean @default(true)
+  warmupPlanPreset String @default("standard")
+  warmupStageIntervalMinutes Int @default(720)
+  warmupSites Json?
+  warmupSitePauses Json?
+  dailyProfileDemand Int @default(0)
+  readinessFreshnessHours Int @default(72)
+  maxPendingProfiles Int @default(500)
+  mobileProxyApiKey String?
+  fingerprintDeviceWeights Json @default("{}")
+  fingerprintDistributionRevision Int @default(1)
+  fingerprintDevicePreset String @default("mixed")
+  fingerprintMode String @default("auto")
+  fingerprintLocale String @default("ru-RU")
+  fingerprintTimezone String @default("Europe/Moscow")
   updatedAt       DateTime @default(now()) @updatedAt
 }
 
 
 model Project {
+  geolocation Json @default("{\"mode\":\"region\"}")
+  sortOrder Int @default(0)
+  archivedAt DateTime?
+  scheduleHours String @default("111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111111")
+  scheduleTimezone String @default("Europe/Moscow")
   id String @id @default(cuid())
   name String
   targetUrl String @map("websiteUrl")
@@ -81,6 +223,7 @@ model Project {
   tasks Task[]
   profileUses ProjectProfileUse[]
   profileHistory ProfileProjectHistory[]
+  visits ProjectVisit[]
 }
 
 model ProfileProjectHistory {
@@ -97,6 +240,7 @@ model ProfileProjectHistory {
 }
 
 model ProjectProfileUse {
+  geolocation Json?
   id String @id @default(cuid())
   projectId String
   project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
@@ -111,10 +255,12 @@ model ProjectProfileUse {
 }
 
 model TaskExecution {
+  selectedSearchQuery String?
   id String @id @default(cuid())
   taskId String
   task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   profileId String
+  proxyId String?
   profile Profile @relation(fields: [profileId], references: [id], onDelete: Restrict)
   status String @default("queued")
   attempts Int @default(0)
@@ -124,5 +270,73 @@ model TaskExecution {
   errorCode String?
   createdAt DateTime @default(now())
   @@unique([taskId, profileId])
+  @@index([taskId, startedAt, status])
   @@index([status, retryAfter])
+}
+
+model ProxyTcpChannel {
+  id String @id
+  providerProxyId String @unique
+  profileId Int
+  profileName String
+  parameters Json
+  family String
+  status String @default("pending")
+  generation Int @default(1)
+  appliedAt DateTime?
+  checkedAt DateTime?
+  diagnostic Json?
+  errorCode String?
+  updatedAt DateTime @updatedAt
+  proxies Proxy[]
+}
+
+model FingerprintMeasurement {
+  id String @id @default(cuid())
+  profileId String
+  profile Profile @relation(fields: [profileId], references: [id], onDelete: Cascade)
+  runtimeVersion String
+  status String
+  createdAt DateTime @default(now())
+  report Json
+  @@index([profileId, runtimeVersion, status, createdAt])
+}
+model BrowserQualification {
+  runtimeVersion String @id
+  status String
+  checkedAt DateTime @default(now())
+  report Json
+}
+
+model ProjectVisit {
+  id String @id @default(cuid())
+  projectId String
+  project Project @relation(fields: [projectId], references: [id], onDelete: Restrict)
+  taskId String?
+  executionId String? @unique
+  kind String
+  query String?
+  actualQuery String?
+  engine String
+  visitedAt DateTime
+  source String @default("observed")
+  @@index([projectId, visitedAt])
+}
+
+model WarmupSiteHealth {
+  id String @id
+  domain String
+  channel String
+  channelLabel String
+  success Int @default(0)
+  failure Int @default(0)
+  consecutiveFailures Int @default(0)
+  lastStatus Int?
+  lastReason String?
+  lastSuccessAt DateTime?
+  lastAttemptAt DateTime
+  cooldownUntil DateTime?
+  durationMs Int?
+  @@unique([domain, channel])
+  @@index([cooldownUntil])
 }

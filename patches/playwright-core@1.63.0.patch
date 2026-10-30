@@ -1,0 +1,323 @@
+diff --git a/lib/coreBundle.js b/lib/coreBundle.js
+--- a/lib/coreBundle.js
++++ b/lib/coreBundle.js
+@@ -1,4 +1,79 @@
+ "use strict";
++
++// Apply the marked context passport before a page/popup's first request.
++function orbitUserAgentOverride(context) {
++  const marker = "/* orbit-worker-passport-v1:";
++  const script = context.initScripts.findLast(script => script.source.includes(marker));
++  if (!script) return;
++  const start = script.source.indexOf(marker) + marker.length;
++  return JSON.parse(script.source.slice(start, script.source.indexOf(" */", start))).override;
++}
++
++// Orbit worker passport adapter. Only marked BrowserContexts opt in. Keep this
++// before Playwright's own resume command so the first worker script sees it.
++async function orbitResumeWorker(context, session, serviceWorker = false, targetId, networkReady) {
++  const marker = "/* orbit-worker-passport-v1:";
++  const script = context.initScripts.findLast(script => script.source.includes(marker));
++  let onPaused, timer;
++  try {
++    if (script) {
++      const start = script.source.indexOf(marker) + marker.length;
++      const metadata = JSON.parse(script.source.slice(start, script.source.indexOf(" */", start)));
++      const paused = new Promise(resolve => { onPaused = resolve; session.once("Debugger.paused", resolve); });
++      // Queue agent commands before releasing startup: some worker realms do
++      // not exist yet and awaiting Runtime.enable would deadlock their creation.
++      const ready = Promise.all([
++        session.send("Runtime.enable"),
++        session.send("Network.setUserAgentOverride", metadata.override),
++        session.send("Debugger.enable"),
++        session.send("Debugger.setInstrumentationBreakpoint", { instrumentation: "beforeScriptExecution" }),
++      ]);
++      ready.catch(() => {});
++      if (serviceWorker) orbitWorkerGate(context, targetId).resolve();
++      const resumed = session.send("Runtime.runIfWaitingForDebugger");
++      resumed.catch(() => {});
++      const values = await Promise.race([
++        Promise.all([ready, paused, resumed, networkReady]),
++        new Promise((_, reject) => timer = setTimeout(() => reject(Error("worker_context_timeout")), 4000)),
++      ]);
++      await session.send("Debugger.removeBreakpoint", { breakpointId: values[0][3].breakpointId });
++      const result = await session.send("Runtime.evaluate", { expression: script.source, disableBreaks: true });
++      if (result.exceptionDetails) throw Error("orbit_worker_passport_initialization_failed");
++    }
++  } catch {
++    // Never include profile contents, proxy parameters or browser errors in logs.
++    if (!session._closed) console.error("orbit_worker_passport_initialization_failed");
++  } finally {
++    clearTimeout(timer);
++    if (onPaused) {
++      session.removeListener("Debugger.paused", onPaused);
++      await session._sendMayFail("Debugger.disable");
++    }
++    await session._sendMayFail("Runtime.runIfWaitingForDebugger");
++  }
++}
++function orbitWorkerGate(context, targetId) {
++  context._orbitWorkerGates ||= new Map();
++  let gate = context._orbitWorkerGates.get(targetId);
++  if (!gate) {
++    let resolve;
++    const promise = new Promise(done => resolve = done);
++    gate = { promise, resolve };
++    context._orbitWorkerGates.set(targetId, gate);
++  }
++  return gate;
++}
++function orbitAttachSharedWorker(context, session) {
++  session.on("Target.attachedToTarget", event => {
++    const child = session.createChildSession(event.sessionId);
++    orbitAttachSharedWorker(context, child);
++    void orbitResumeWorker(context, child);
++  });
++  session.on("Target.detachedFromTarget", event => {
++    session._connection._sessions.get(event.sessionId)?.dispose();
++  });
++  session._sendMayFail("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true, filter: [{ type: "worker" }, { exclude: true }] });
++}
+ var __create = Object.create;
+ var __defProp = Object.defineProperty;
+ var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
+@@ -16460,7 +16535,8 @@
+     scheme.BrowserContextStorageStateParams = tObject({
+       indexedDB: tOptional(tBoolean),
+       opfs: tOptional(tBoolean),
+-      credentials: tOptional(tBoolean)
++      credentials: tOptional(tBoolean),
++      orbitOrigins: tOptional(tArray(tString))
+     });
+     scheme.BrowserContextStorageStateResult = tObject({
+       cookies: tArray(tType("NetworkCookie")),
+@@ -36110,7 +36186,11 @@
+         const enabled = this._protocolRequestInterceptionEnabled;
+         if (initial && !enabled)
+           return;
+-        const cachePromise = info.session.send("Network.setCacheDisabled", { cacheDisabled: enabled });
++        // Persistent Orbit profiles explicitly retain HTTP cache while routing.
++        // Default Playwright contexts keep their original cache-disable policy.
++        const orbitCacheContext = this._page?.browserContext || this._serviceWorker?.browserContext;
++        const orbitPersistentCache = !this._page?.isStorageStatePage && orbitCacheContext?.initScripts.some(script => script.source.includes("/* orbit-persistent-cache-v1 */"));
++        const cachePromise = info.session.send("Network.setCacheDisabled", { cacheDisabled: enabled && !orbitPersistentCache });
+         let fetchPromise = Promise.resolve(void 0);
+         if (!info.workerFrame) {
+           if (enabled)
+@@ -36138,7 +36218,8 @@
+       async clearCache() {
+         await this._forEachSession(async (info) => {
+           await info.session.send("Network.setCacheDisabled", { cacheDisabled: true });
+-          if (!this._protocolRequestInterceptionEnabled)
++          const orbitCacheContext = this._page?.browserContext || this._serviceWorker?.browserContext;
++          if (!this._protocolRequestInterceptionEnabled || (!this._page?.isStorageStatePage && orbitCacheContext?.initScripts.some(script => script.source.includes("/* orbit-persistent-cache-v1 */"))))
+             await info.session.send("Network.setCacheDisabled", { cacheDisabled: false });
+           if (!info.workerFrame)
+             await info.session.send("Network.clearBrowserCache");
+@@ -37630,6 +37711,10 @@
+           this._crPage._networkManager.addSession(this._client, void 0, this._isMainFrame()),
+           this._client.send("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true })
+         ];
++        // Local storage collectors must never be intercepted by installed SWs.
++        /* orbit-storage-probe-v1 */
++        if (this._page.isStorageStatePage)
++          promises2.push(this._client.send("Network.setBypassServiceWorker", { bypass: true }));
+         if (!this._page.isStorageStatePage) {
+           const skipDefaultOverrides = browserOptions.noDefaults && this._crPage._browserContext === this._crPage._browserContext._browser._defaultContext;
+           if (this._crPage._browserContext.needsPlaywrightBinding())
+@@ -37819,6 +37904,13 @@
+           return;
+         }
+         if (event.targetInfo.type !== "worker") {
++          if (event.targetInfo.type === "service_worker" && this._crPage._browserContext.initScripts.some(script => script.source.includes("/* orbit-worker-passport-v1:"))) {
++            // The browser session initializes SWs. Detaching this secondary
++            // page session too early also releases Chromium's startup pause.
++            const gate = orbitWorkerGate(this._crPage._browserContext, event.targetInfo.targetId);
++            gate.promise.then(() => session2.detach()).catch(() => {});
++            return;
++          }
+           session2.detach().catch(() => {
+           });
+           return;
+@@ -37835,9 +37927,9 @@
+         else
+           worker.workerScriptLoaded();
+         session2._sendMayFail("Runtime.enable");
+-        this._crPage._networkManager.addSession(session2, this._page.frameManager.frame(event.targetInfo.parentFrameId ?? this._targetId) ?? void 0).catch(() => {
++        const orbitNetworkReady = this._crPage._networkManager.addSession(session2, this._page.frameManager.frame(event.targetInfo.parentFrameId ?? this._targetId) ?? void 0).catch(() => {
+         });
+-        session2._sendMayFail("Runtime.runIfWaitingForDebugger");
++        void orbitResumeWorker(this._crPage._browserContext, session2, false, void 0, orbitNetworkReady);
+         session2._sendMayFail("Target.setAutoAttach", { autoAttach: true, waitForDebuggerOnStart: true, flatten: true });
+         session2.on("Target.attachedToTarget", (event2) => this._onAttachedToTarget(event2));
+         session2.on("Target.detachedFromTarget", (event2) => this._onDetachedFromTarget(event2));
+@@ -38047,7 +38139,8 @@
+         await this._client.send("Emulation.setUserAgentOverride", {
+           userAgent: options.userAgent || "",
+           acceptLanguage: options.locale,
+-          userAgentMetadata: calculateUserAgentMetadata(options)
++          userAgentMetadata: calculateUserAgentMetadata(options),
++          ...orbitUserAgentOverride(this._crPage._browserContext)
+         });
+       }
+       async _setDefaultFontFamilies(session2) {
+@@ -38193,7 +38286,7 @@
+     init_crProtocolHelper();
+     init_crPage();
+     CRServiceWorker = class extends Worker {
+-      constructor(browserContext, session2, url3) {
++      constructor(browserContext, session2, url3, orbitTargetId) {
+         super(browserContext, url3);
+         this._session = session2;
+         this.browserContext = browserContext;
+@@ -38230,10 +38323,9 @@
+         });
+         session2.send("Runtime.enable", {}).catch((e) => {
+         });
+-        session2.send("Runtime.runIfWaitingForDebugger").catch((e) => {
+-        });
++        this._orbitReady = orbitResumeWorker(this.browserContext, session2, true, orbitTargetId);
+         session2.on("Inspector.targetReloadedAfterCrash", () => {
+-          session2._sendMayFail("Runtime.runIfWaitingForDebugger", {});
++          void orbitResumeWorker(this.browserContext, session2, true, orbitTargetId);
+         });
+       }
+       didClose() {
+@@ -38264,7 +38356,8 @@
+         await this._session.send("Emulation.setUserAgentOverride", {
+           userAgent: options.userAgent || "",
+           acceptLanguage: options.locale,
+-          userAgentMetadata: calculateUserAgentMetadata(options)
++          userAgentMetadata: calculateUserAgentMetadata(options),
++          ...orbitUserAgentOverride(this.browserContext)
+         }).catch(() => {
+         });
+       }
+@@ -38330,6 +38423,7 @@
+         this._contexts = /* @__PURE__ */ new Map();
+         this._crPages = /* @__PURE__ */ new Map();
+         this._serviceWorkers = /* @__PURE__ */ new Map();
++        this._orbitSharedWorkers = new Map();
+         this._version = "";
+         this._majorVersion = 0;
+         this._revision = "";
+@@ -38376,6 +38470,37 @@
+         await browser._waitForAllPagesToBeInitialized();
+         return browser;
+       }
++      async _orbitEnableServiceWorkerBootstrap() {
++        if (!this._orbitServiceWorkerBootstrap) {
++          this._session.on("Fetch.requestPaused", event => this._orbitContinueServiceWorkerBootstrap(event));
++          // Chromium classifies browser-process ServiceWorkerNewScriptLoader
++          // requests as Other, not Script. Never intercept documents/assets or
++          // change Network.setCacheDisabled on page sessions.
++          this._orbitServiceWorkerBootstrap = this._session.send("Fetch.enable", {
++            patterns: [{ resourceType: "Other", requestStage: "Request" }]
++          });
++        }
++        await this._orbitServiceWorkerBootstrap;
++      }
++      async _orbitContinueServiceWorkerBootstrap(event) {
++        let headers;
++        try {
++          if (Object.entries(event.request.headers).some(([name, value]) => name.toLowerCase() === "service-worker" && value === "script")) {
++            const { targetInfo } = await this._session.send("Target.getTargetInfo", { targetId: event.frameId });
++            if (targetInfo.type === "service_worker") {
++              const context = this._contexts.get(targetInfo.browserContextId) || this._defaultContext;
++              const override = context && orbitUserAgentOverride(context);
++              if (override) {
++                headers = Object.entries(event.request.headers).filter(([name]) => name.toLowerCase() !== "user-agent").map(([name, value]) => ({ name, value }));
++                headers.push({ name: "User-Agent", value: override.userAgent });
++              }
++            }
++          }
++        } catch {
++          // The owning target/context may have closed while this request paused.
++        }
++        await this._session._sendMayFail("Fetch.continueRequest", { requestId: event.requestId, headers });
++      }
+       async doCreateNewContext(options) {
+         const proxy = options.proxyOverride || options.proxy;
+         let proxyBypassList = void 0;
+@@ -38447,8 +38572,18 @@
+           this._crPages.set(targetInfo.targetId, crPage);
+           return;
+         }
++        if (targetInfo.type === "shared_worker" && context.initScripts.some(script => script.source.includes("/* orbit-worker-passport-v1:"))) {
++          this._orbitSharedWorkers.set(targetInfo.targetId, session2);
++          orbitAttachSharedWorker(context, session2);
++          void orbitResumeWorker(context, session2);
++          return;
++        }
+         if (targetInfo.type === "service_worker") {
+-          const serviceWorker = new CRServiceWorker(context, session2, targetInfo.url);
++          const serviceWorker = new CRServiceWorker(context, session2, targetInfo.url, targetInfo.targetId);
++          if (context.initScripts.some(script => script.source.includes("/* orbit-worker-passport-v1:"))) {
++            const gate = orbitWorkerGate(context, targetInfo.targetId);
++            serviceWorker._orbitReady.finally(() => gate.resolve());
++          }
+           this._serviceWorkers.set(targetInfo.targetId, serviceWorker);
+           context.emit(CRBrowserContext.CREvents.ServiceWorker, serviceWorker);
+           return;
+@@ -38458,6 +38593,12 @@
+       }
+       _onDetachedFromTarget(payload) {
+         const targetId = payload.targetId;
++        const shared = this._orbitSharedWorkers.get(targetId);
++        if (shared) {
++          this._orbitSharedWorkers.delete(targetId);
++          shared.dispose();
++          return;
++        }
+         const crPage = this._crPages.get(targetId);
+         if (crPage) {
+           this._crPages.delete(targetId);
+@@ -38467,6 +38608,7 @@
+         const serviceWorker = this._serviceWorkers.get(targetId);
+         if (serviceWorker) {
+           this._serviceWorkers.delete(targetId);
++          serviceWorker.browserContext._orbitWorkerGates?.delete(targetId);
+           serviceWorker.didClose();
+           return;
+         }
+@@ -38725,6 +38867,8 @@
+           await sw.updateHttpCredentials();
+       }
+       async doAddInitScript(initScript) {
++        if (initScript.source.includes("/* orbit-worker-passport-v1:"))
++          await this._browser._orbitEnableServiceWorkerBootstrap();
+         for (const page of this.pages())
+           await page.delegate.addInitScript(initScript);
+       }
+@@ -51954,7 +52098,7 @@
+       addVisitedOrigin(origin) {
+         this._origins.add(origin);
+       }
+-      async storageState(progress2, { indexedDB = false, opfs = false, credentials = false } = {}) {
++      async storageState(progress2, { indexedDB = false, opfs = false, credentials = false, orbitOrigins = [] } = {}) {
+         const result2 = {
+           cookies: await this.cookies(progress2),
+           origins: []
+@@ -51962,6 +52106,13 @@
+         if (credentials)
+           result2.credentials = await progress2.race(this.credentials.get());
+         const originsToSave = new Set(this._origins);
++        // orbit-storage-origins-v2: request-scoped; never installed as page script.
++        for (const origin of orbitOrigins) {
++          const url = new URL(origin);
++          if ((url.protocol !== "http:" && url.protocol !== "https:") || url.origin !== origin)
++            throw new Error("Invalid storage origin");
++          originsToSave.add(origin);
++        }
+         const hasStorage = (storage) => !!(storage.localStorage.length || storage.indexedDB?.length || storage.opfs?.length);
+         const collectScript = `(() => {
+       const module = {};
+@@ -62581,7 +62732,7 @@
+         });
+       }
+       async storageState(options = {}) {
+-        const state = await this._channel.storageState({ indexedDB: options.indexedDB, opfs: options.opfs, credentials: options.credentials }, kNoTimeout);
++        const state = await this._channel.storageState({ indexedDB: options.indexedDB, opfs: options.opfs, credentials: options.credentials, orbitOrigins: options.orbitOrigins }, kNoTimeout);
+         if (options.path) {
+           await mkdirIfNeeded2(options.path);
+           await import_fs48.default.promises.writeFile(options.path, JSON.stringify(state, void 0, 2), "utf8");

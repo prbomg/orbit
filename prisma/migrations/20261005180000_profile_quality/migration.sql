@@ -1,0 +1,3 @@
+CREATE TABLE "FingerprintMeasurement" ("id" TEXT NOT NULL PRIMARY KEY, "profileId" TEXT NOT NULL, "runtimeVersion" TEXT NOT NULL, "status" TEXT NOT NULL, "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "report" JSONB NOT NULL, FOREIGN KEY ("profileId") REFERENCES "Profile"("id") ON DELETE CASCADE ON UPDATE CASCADE);
+CREATE INDEX "FingerprintMeasurement_profileId_runtimeVersion_status_createdAt_idx" ON "FingerprintMeasurement"("profileId", "runtimeVersion", "status", "createdAt");
+CREATE TABLE "BrowserQualification" ("runtimeVersion" TEXT NOT NULL PRIMARY KEY, "status" TEXT NOT NULL, "checkedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, "report" JSONB NOT NULL);

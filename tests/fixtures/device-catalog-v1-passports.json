@@ -1,0 +1,818 @@
+[
+  {
+    "profileId": "s23_android13",
+    "identityHash": "68abffaa12526e98cfaab7ee417d31a26b56cc0c7643c1ed575f785f3b4b969d",
+    "passport": {
+      "deviceTemplate": {
+        "id": "s23_android13",
+        "revision": 1,
+        "catalogVersion": "android-catalog-2026-10-v1"
+      },
+      "generation": {
+        "version": "4",
+        "deviceSet": "android-catalog-2026-10-v1",
+        "preset": "mixed",
+        "adapter": "local-v5",
+        "baseSample": {
+          "version": 1,
+          "hash": "6c9b07d5cb6ee0fb9a503d186842e3e65f13ac6fff7730eb83f25e3e9322f94f",
+          "generatorVersion": "2.1.88"
+        },
+        "distribution": {
+          "algorithm": "sha256-weighted-v1",
+          "revision": 1,
+          "weights": {
+            "s23_android13": 1,
+            "pixel7_android13": 1,
+            "a52_android12": 1,
+            "s23_android14": 0
+          },
+          "fixedTemplateId": "s23_android13"
+        }
+      },
+      "version": 1,
+      "source": "local",
+      "requestedSource": "local",
+      "resolved": true,
+      "seed": "00000000000000000000000000000001",
+      "createdAt": "2026-10-14T00:00:00.000Z",
+      "timezone": "Europe/Moscow",
+      "fingerprint": {
+        "screen": {
+          "availTop": 0,
+          "availLeft": 0,
+          "pageXOffset": 0,
+          "pageYOffset": 0,
+          "screenX": 0,
+          "hasHDR": false,
+          "width": 360,
+          "height": 780,
+          "availWidth": 360,
+          "availHeight": 780,
+          "clientWidth": 360,
+          "clientHeight": 780,
+          "innerWidth": 360,
+          "innerHeight": 780,
+          "outerWidth": 360,
+          "outerHeight": 780,
+          "colorDepth": 24,
+          "pixelDepth": 24,
+          "devicePixelRatio": 3
+        },
+        "navigator": {
+          "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+          "userAgentData": {
+            "brands": [
+              {
+                "brand": "Chromium",
+                "version": "147"
+              },
+              {
+                "brand": "Google Chrome",
+                "version": "147"
+              },
+              {
+                "brand": "Not_A Brand",
+                "version": "99"
+              }
+            ],
+            "mobile": true,
+            "platform": "Android",
+            "architecture": "",
+            "bitness": "",
+            "model": "SM-S911B",
+            "platformVersion": "13.0.0",
+            "uaFullVersion": "147.0.0.0",
+            "fullVersionList": [
+              {
+                "brand": "Chromium",
+                "version": "147.0.0.0"
+              },
+              {
+                "brand": "Google Chrome",
+                "version": "147.0.0.0"
+              },
+              {
+                "brand": "Not_A Brand",
+                "version": "99.0.0.0"
+              }
+            ]
+          },
+          "language": "ru-RU",
+          "languages": [
+            "ru-RU",
+            "ru"
+          ],
+          "platform": "Linux armv81",
+          "deviceMemory": 8,
+          "hardwareConcurrency": 8,
+          "maxTouchPoints": 5,
+          "product": "Gecko",
+          "productSub": "20030107",
+          "vendor": "Google Inc.",
+          "vendorSub": null,
+          "doNotTrack": null,
+          "appCodeName": "Mozilla",
+          "appName": "Netscape",
+          "appVersion": "5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+          "oscpu": null,
+          "extraProperties": {
+            "vendorFlavors": [
+              "chrome"
+            ],
+            "globalPrivacyControl": null,
+            "pdfViewerEnabled": null,
+            "installedApps": []
+          },
+          "webdriver": false
+        },
+        "audioCodecs": {
+          "ogg": "probably",
+          "mp3": "probably",
+          "wav": "probably",
+          "m4a": "maybe",
+          "aac": "probably"
+        },
+        "videoCodecs": {
+          "ogg": "",
+          "h264": "probably",
+          "webm": "probably"
+        },
+        "pluginsData": {
+          "plugins": [],
+          "mimeTypes": []
+        },
+        "videoCard": {
+          "vendor": "Qualcomm",
+          "renderer": "Adreno (TM) 740"
+        },
+        "multimediaDevices": {
+          "speakers": [
+            {
+              "deviceId": "",
+              "kind": "audiooutput",
+              "label": "",
+              "groupId": ""
+            }
+          ],
+          "micros": [
+            {
+              "deviceId": "",
+              "kind": "audioinput",
+              "label": "",
+              "groupId": ""
+            }
+          ],
+          "webcams": [
+            {
+              "deviceId": "",
+              "kind": "videoinput",
+              "label": "",
+              "groupId": ""
+            }
+          ]
+        },
+        "fonts": [
+          "Roboto",
+          "Noto Sans",
+          "Noto Serif"
+        ],
+        "mockWebRTC": false,
+        "slim": false
+      },
+      "headers": {
+        "sec-ch-ua": "\"Chromium\";v=\"147\", \"Google Chrome\";v=\"147\", \"Not_A Brand\";v=\"99\"",
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": "\"Android\"",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "sec-fetch-site": "same-site",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-user": "?1",
+        "sec-fetch-dest": "document",
+        "accept-encoding": "gzip, deflate, br, zstd",
+        "accept-language": "ru-RU,ru;q=0.9"
+      },
+      "canvasSeed": 0,
+      "limitations": [
+        "Canvas и WebGL эмулируются; дамп физического телефона не используется. Снимки сессии не зашифрованы AES-256-GCM на уровне приложения.",
+        "Геолокация, оператор, DNS и WebRTC не подтверждены характеристиками устройства. Параметры прокси проверяются отдельно для попытки.",
+        "Серверный Chromium эмулирует Android; физическое устройство не воспроизводится.",
+        "Аудио и шрифты измеряются в браузере. Произвольный аудио-хеш не подменяется."
+      ]
+    }
+  },
+  {
+    "profileId": "pixel7_android13",
+    "identityHash": "f7b06831c41a679e12986d4ad811c1f4916ae798df19887f1dc3d04e7f7666ca",
+    "passport": {
+      "deviceTemplate": {
+        "id": "pixel7_android13",
+        "revision": 1,
+        "catalogVersion": "android-catalog-2026-10-v1"
+      },
+      "generation": {
+        "version": "4",
+        "deviceSet": "android-catalog-2026-10-v1",
+        "preset": "mixed",
+        "adapter": "local-v5",
+        "baseSample": {
+          "version": 1,
+          "hash": "6c9b07d5cb6ee0fb9a503d186842e3e65f13ac6fff7730eb83f25e3e9322f94f",
+          "generatorVersion": "2.1.88"
+        },
+        "distribution": {
+          "algorithm": "sha256-weighted-v1",
+          "revision": 1,
+          "weights": {
+            "s23_android13": 1,
+            "pixel7_android13": 1,
+            "a52_android12": 1,
+            "s23_android14": 0
+          },
+          "fixedTemplateId": "pixel7_android13"
+        }
+      },
+      "version": 1,
+      "source": "local",
+      "requestedSource": "local",
+      "resolved": true,
+      "seed": "00000000000000000000000000000001",
+      "createdAt": "2026-10-14T00:00:00.000Z",
+      "timezone": "Europe/Moscow",
+      "fingerprint": {
+        "screen": {
+          "availTop": 0,
+          "availLeft": 0,
+          "pageXOffset": 0,
+          "pageYOffset": 0,
+          "screenX": 0,
+          "hasHDR": false,
+          "width": 412,
+          "height": 915,
+          "availWidth": 412,
+          "availHeight": 915,
+          "clientWidth": 412,
+          "clientHeight": 915,
+          "innerWidth": 412,
+          "innerHeight": 915,
+          "outerWidth": 412,
+          "outerHeight": 915,
+          "colorDepth": 24,
+          "pixelDepth": 24,
+          "devicePixelRatio": 2.625
+        },
+        "navigator": {
+          "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+          "userAgentData": {
+            "brands": [
+              {
+                "brand": "Chromium",
+                "version": "147"
+              },
+              {
+                "brand": "Google Chrome",
+                "version": "147"
+              },
+              {
+                "brand": "Not_A Brand",
+                "version": "99"
+              }
+            ],
+            "mobile": true,
+            "platform": "Android",
+            "architecture": "",
+            "bitness": "",
+            "model": "Pixel 7",
+            "platformVersion": "13.0.0",
+            "uaFullVersion": "147.0.0.0",
+            "fullVersionList": [
+              {
+                "brand": "Chromium",
+                "version": "147.0.0.0"
+              },
+              {
+                "brand": "Google Chrome",
+                "version": "147.0.0.0"
+              },
+              {
+                "brand": "Not_A Brand",
+                "version": "99.0.0.0"
+              }
+            ]
+          },
+          "language": "ru-RU",
+          "languages": [
+            "ru-RU",
+            "ru"
+          ],
+          "platform": "Linux armv81",
+          "deviceMemory": 8,
+          "hardwareConcurrency": 8,
+          "maxTouchPoints": 5,
+          "product": "Gecko",
+          "productSub": "20030107",
+          "vendor": "Google Inc.",
+          "vendorSub": null,
+          "doNotTrack": null,
+          "appCodeName": "Mozilla",
+          "appName": "Netscape",
+          "appVersion": "5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+          "oscpu": null,
+          "extraProperties": {
+            "vendorFlavors": [
+              "chrome"
+            ],
+            "globalPrivacyControl": null,
+            "pdfViewerEnabled": null,
+            "installedApps": []
+          },
+          "webdriver": false
+        },
+        "audioCodecs": {
+          "ogg": "probably",
+          "mp3": "probably",
+          "wav": "probably",
+          "m4a": "maybe",
+          "aac": "probably"
+        },
+        "videoCodecs": {
+          "ogg": "",
+          "h264": "probably",
+          "webm": "probably"
+        },
+        "pluginsData": {
+          "plugins": [],
+          "mimeTypes": []
+        },
+        "videoCard": {
+          "vendor": "ARM",
+          "renderer": "Mali-G710"
+        },
+        "multimediaDevices": {
+          "speakers": [
+            {
+              "deviceId": "",
+              "kind": "audiooutput",
+              "label": "",
+              "groupId": ""
+            }
+          ],
+          "micros": [
+            {
+              "deviceId": "",
+              "kind": "audioinput",
+              "label": "",
+              "groupId": ""
+            }
+          ],
+          "webcams": [
+            {
+              "deviceId": "",
+              "kind": "videoinput",
+              "label": "",
+              "groupId": ""
+            }
+          ]
+        },
+        "fonts": [
+          "Roboto",
+          "Noto Sans",
+          "Noto Serif"
+        ],
+        "mockWebRTC": false,
+        "slim": false
+      },
+      "headers": {
+        "sec-ch-ua": "\"Chromium\";v=\"147\", \"Google Chrome\";v=\"147\", \"Not_A Brand\";v=\"99\"",
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": "\"Android\"",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "sec-fetch-site": "same-site",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-user": "?1",
+        "sec-fetch-dest": "document",
+        "accept-encoding": "gzip, deflate, br, zstd",
+        "accept-language": "ru-RU,ru;q=0.9"
+      },
+      "canvasSeed": 0,
+      "limitations": [
+        "Canvas и WebGL эмулируются; дамп физического телефона не используется. Снимки сессии не зашифрованы AES-256-GCM на уровне приложения.",
+        "Геолокация, оператор, DNS и WebRTC не подтверждены характеристиками устройства. Параметры прокси проверяются отдельно для попытки.",
+        "Серверный Chromium эмулирует Android; физическое устройство не воспроизводится.",
+        "Аудио и шрифты измеряются в браузере. Произвольный аудио-хеш не подменяется."
+      ]
+    }
+  },
+  {
+    "profileId": "a52_android12",
+    "identityHash": "05d65e3d6f289cd8212aef8b31a20f6dd894c94ee2fd41d041ac0b5e75ae6c12",
+    "passport": {
+      "deviceTemplate": {
+        "id": "a52_android12",
+        "revision": 1,
+        "catalogVersion": "android-catalog-2026-10-v1"
+      },
+      "generation": {
+        "version": "4",
+        "deviceSet": "android-catalog-2026-10-v1",
+        "preset": "mixed",
+        "adapter": "local-v5",
+        "baseSample": {
+          "version": 1,
+          "hash": "6c9b07d5cb6ee0fb9a503d186842e3e65f13ac6fff7730eb83f25e3e9322f94f",
+          "generatorVersion": "2.1.88"
+        },
+        "distribution": {
+          "algorithm": "sha256-weighted-v1",
+          "revision": 1,
+          "weights": {
+            "s23_android13": 1,
+            "pixel7_android13": 1,
+            "a52_android12": 1,
+            "s23_android14": 0
+          },
+          "fixedTemplateId": "a52_android12"
+        }
+      },
+      "version": 1,
+      "source": "local",
+      "requestedSource": "local",
+      "resolved": true,
+      "seed": "00000000000000000000000000000001",
+      "createdAt": "2026-10-14T00:00:00.000Z",
+      "timezone": "Europe/Moscow",
+      "fingerprint": {
+        "screen": {
+          "availTop": 0,
+          "availLeft": 0,
+          "pageXOffset": 0,
+          "pageYOffset": 0,
+          "screenX": 0,
+          "hasHDR": false,
+          "width": 412,
+          "height": 915,
+          "availWidth": 412,
+          "availHeight": 915,
+          "clientWidth": 412,
+          "clientHeight": 915,
+          "innerWidth": 412,
+          "innerHeight": 915,
+          "outerWidth": 412,
+          "outerHeight": 915,
+          "colorDepth": 24,
+          "pixelDepth": 24,
+          "devicePixelRatio": 2.625
+        },
+        "navigator": {
+          "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+          "userAgentData": {
+            "brands": [
+              {
+                "brand": "Chromium",
+                "version": "147"
+              },
+              {
+                "brand": "Google Chrome",
+                "version": "147"
+              },
+              {
+                "brand": "Not_A Brand",
+                "version": "99"
+              }
+            ],
+            "mobile": true,
+            "platform": "Android",
+            "architecture": "",
+            "bitness": "",
+            "model": "SM-A525F",
+            "platformVersion": "12.0.0",
+            "uaFullVersion": "147.0.0.0",
+            "fullVersionList": [
+              {
+                "brand": "Chromium",
+                "version": "147.0.0.0"
+              },
+              {
+                "brand": "Google Chrome",
+                "version": "147.0.0.0"
+              },
+              {
+                "brand": "Not_A Brand",
+                "version": "99.0.0.0"
+              }
+            ]
+          },
+          "language": "ru-RU",
+          "languages": [
+            "ru-RU",
+            "ru"
+          ],
+          "platform": "Linux armv81",
+          "deviceMemory": 4,
+          "hardwareConcurrency": 8,
+          "maxTouchPoints": 5,
+          "product": "Gecko",
+          "productSub": "20030107",
+          "vendor": "Google Inc.",
+          "vendorSub": null,
+          "doNotTrack": null,
+          "appCodeName": "Mozilla",
+          "appName": "Netscape",
+          "appVersion": "5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+          "oscpu": null,
+          "extraProperties": {
+            "vendorFlavors": [
+              "chrome"
+            ],
+            "globalPrivacyControl": null,
+            "pdfViewerEnabled": null,
+            "installedApps": []
+          },
+          "webdriver": false
+        },
+        "audioCodecs": {
+          "ogg": "probably",
+          "mp3": "probably",
+          "wav": "probably",
+          "m4a": "maybe",
+          "aac": "probably"
+        },
+        "videoCodecs": {
+          "ogg": "",
+          "h264": "probably",
+          "webm": "probably"
+        },
+        "pluginsData": {
+          "plugins": [],
+          "mimeTypes": []
+        },
+        "videoCard": {
+          "vendor": "Qualcomm",
+          "renderer": "Adreno (TM) 618"
+        },
+        "multimediaDevices": {
+          "speakers": [
+            {
+              "deviceId": "",
+              "kind": "audiooutput",
+              "label": "",
+              "groupId": ""
+            }
+          ],
+          "micros": [
+            {
+              "deviceId": "",
+              "kind": "audioinput",
+              "label": "",
+              "groupId": ""
+            }
+          ],
+          "webcams": [
+            {
+              "deviceId": "",
+              "kind": "videoinput",
+              "label": "",
+              "groupId": ""
+            }
+          ]
+        },
+        "fonts": [
+          "Roboto",
+          "Noto Sans",
+          "Noto Serif"
+        ],
+        "mockWebRTC": false,
+        "slim": false
+      },
+      "headers": {
+        "sec-ch-ua": "\"Chromium\";v=\"147\", \"Google Chrome\";v=\"147\", \"Not_A Brand\";v=\"99\"",
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": "\"Android\"",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "sec-fetch-site": "same-site",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-user": "?1",
+        "sec-fetch-dest": "document",
+        "accept-encoding": "gzip, deflate, br, zstd",
+        "accept-language": "ru-RU,ru;q=0.9"
+      },
+      "canvasSeed": 0,
+      "limitations": [
+        "Canvas и WebGL эмулируются; дамп физического телефона не используется. Снимки сессии не зашифрованы AES-256-GCM на уровне приложения.",
+        "Геолокация, оператор, DNS и WebRTC не подтверждены характеристиками устройства. Параметры прокси проверяются отдельно для попытки.",
+        "Серверный Chromium эмулирует Android; физическое устройство не воспроизводится.",
+        "Аудио и шрифты измеряются в браузере. Произвольный аудио-хеш не подменяется."
+      ]
+    }
+  },
+  {
+    "profileId": "s23_android14",
+    "identityHash": "a3a2e4c1452a879d3aac6d3a8c748279da52f185a92d91131789c1201592ee5a",
+    "passport": {
+      "deviceTemplate": {
+        "id": "s23_android14",
+        "revision": 1,
+        "catalogVersion": "android-catalog-2026-10-v1"
+      },
+      "generation": {
+        "version": "4",
+        "deviceSet": "android-catalog-2026-10-v1",
+        "preset": "mixed",
+        "adapter": "local-v5",
+        "baseSample": {
+          "version": 1,
+          "hash": "6c9b07d5cb6ee0fb9a503d186842e3e65f13ac6fff7730eb83f25e3e9322f94f",
+          "generatorVersion": "2.1.88"
+        },
+        "distribution": {
+          "algorithm": "sha256-weighted-v1",
+          "revision": 1,
+          "weights": {
+            "s23_android13": 1,
+            "pixel7_android13": 1,
+            "a52_android12": 1,
+            "s23_android14": 0
+          },
+          "fixedTemplateId": "s23_android14"
+        }
+      },
+      "version": 1,
+      "source": "local",
+      "requestedSource": "local",
+      "resolved": true,
+      "seed": "00000000000000000000000000000001",
+      "createdAt": "2026-10-14T00:00:00.000Z",
+      "timezone": "Europe/Moscow",
+      "fingerprint": {
+        "screen": {
+          "availTop": 0,
+          "availLeft": 0,
+          "pageXOffset": 0,
+          "pageYOffset": 0,
+          "screenX": 0,
+          "hasHDR": false,
+          "width": 360,
+          "height": 780,
+          "availWidth": 360,
+          "availHeight": 780,
+          "clientWidth": 360,
+          "clientHeight": 780,
+          "innerWidth": 360,
+          "innerHeight": 780,
+          "outerWidth": 360,
+          "outerHeight": 780,
+          "colorDepth": 24,
+          "pixelDepth": 24,
+          "devicePixelRatio": 3
+        },
+        "navigator": {
+          "userAgent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+          "userAgentData": {
+            "brands": [
+              {
+                "brand": "Chromium",
+                "version": "147"
+              },
+              {
+                "brand": "Google Chrome",
+                "version": "147"
+              },
+              {
+                "brand": "Not_A Brand",
+                "version": "99"
+              }
+            ],
+            "mobile": true,
+            "platform": "Android",
+            "architecture": "",
+            "bitness": "",
+            "model": "SM-S911B",
+            "platformVersion": "14.0.0",
+            "uaFullVersion": "147.0.0.0",
+            "fullVersionList": [
+              {
+                "brand": "Chromium",
+                "version": "147.0.0.0"
+              },
+              {
+                "brand": "Google Chrome",
+                "version": "147.0.0.0"
+              },
+              {
+                "brand": "Not_A Brand",
+                "version": "99.0.0.0"
+              }
+            ]
+          },
+          "language": "ru-RU",
+          "languages": [
+            "ru-RU",
+            "ru"
+          ],
+          "platform": "Linux armv81",
+          "deviceMemory": 8,
+          "hardwareConcurrency": 8,
+          "maxTouchPoints": 5,
+          "product": "Gecko",
+          "productSub": "20030107",
+          "vendor": "Google Inc.",
+          "vendorSub": null,
+          "doNotTrack": null,
+          "appCodeName": "Mozilla",
+          "appName": "Netscape",
+          "appVersion": "5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+          "oscpu": null,
+          "extraProperties": {
+            "vendorFlavors": [
+              "chrome"
+            ],
+            "globalPrivacyControl": null,
+            "pdfViewerEnabled": null,
+            "installedApps": []
+          },
+          "webdriver": false
+        },
+        "audioCodecs": {
+          "ogg": "probably",
+          "mp3": "probably",
+          "wav": "probably",
+          "m4a": "maybe",
+          "aac": "probably"
+        },
+        "videoCodecs": {
+          "ogg": "",
+          "h264": "probably",
+          "webm": "probably"
+        },
+        "pluginsData": {
+          "plugins": [],
+          "mimeTypes": []
+        },
+        "videoCard": {
+          "vendor": "Qualcomm",
+          "renderer": "Adreno (TM) 740"
+        },
+        "multimediaDevices": {
+          "speakers": [
+            {
+              "deviceId": "",
+              "kind": "audiooutput",
+              "label": "",
+              "groupId": ""
+            }
+          ],
+          "micros": [
+            {
+              "deviceId": "",
+              "kind": "audioinput",
+              "label": "",
+              "groupId": ""
+            }
+          ],
+          "webcams": [
+            {
+              "deviceId": "",
+              "kind": "videoinput",
+              "label": "",
+              "groupId": ""
+            }
+          ]
+        },
+        "fonts": [
+          "Roboto",
+          "Noto Sans",
+          "Noto Serif"
+        ],
+        "mockWebRTC": false,
+        "slim": false
+      },
+      "headers": {
+        "sec-ch-ua": "\"Chromium\";v=\"147\", \"Google Chrome\";v=\"147\", \"Not_A Brand\";v=\"99\"",
+        "sec-ch-ua-mobile": "?1",
+        "sec-ch-ua-platform": "\"Android\"",
+        "upgrade-insecure-requests": "1",
+        "user-agent": "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/147.0.0.0 Mobile Safari/537.36",
+        "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+        "sec-fetch-site": "same-site",
+        "sec-fetch-mode": "navigate",
+        "sec-fetch-user": "?1",
+        "sec-fetch-dest": "document",
+        "accept-encoding": "gzip, deflate, br, zstd",
+        "accept-language": "ru-RU,ru;q=0.9"
+      },
+      "canvasSeed": 0,
+      "limitations": [
+        "Canvas и WebGL эмулируются; дамп физического телефона не используется. Снимки сессии не зашифрованы AES-256-GCM на уровне приложения.",
+        "Геолокация, оператор, DNS и WebRTC не подтверждены характеристиками устройства. Параметры прокси проверяются отдельно для попытки.",
+        "Серверный Chromium эмулирует Android; физическое устройство не воспроизводится.",
+        "Аудио и шрифты измеряются в браузере. Произвольный аудио-хеш не подменяется."
+      ]
+    }
+  }
+]

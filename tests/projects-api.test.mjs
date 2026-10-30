@@ -1,3 +1,4 @@
+import { authHeaders } from './helpers/auth.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { randomUUID } from 'node:crypto';
@@ -7,7 +8,7 @@ const base = process.env.API_TEST_BASE_URL;
 if (!base || !['127.0.0.1', 'localhost', '[::1]'].includes(new URL(base).hostname)) throw new Error('API_TEST_BASE_URL must point to a local server');
 async function call(path, method = 'GET', body, origin = new URL(base).origin) {
   const response = await fetch(`${base}${path}`, {
-    method, headers: { 'Content-Type': 'application/json', Origin: origin },
+    method, headers: { ...await authHeaders(), 'Content-Type': 'application/json', Origin: origin },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
   });
   return { status: response.status, data: response.status === 204 ? null : await response.json() };
@@ -69,13 +70,15 @@ test('project tasks store plans, inherit the project domain, and keep progress r
   const prisma = new PrismaClient(); let project; let task; let profileId;
   try {
     project = await prisma.project.create({ data: { name: 'Task architecture fixture', targetUrl: 'https://project.example.test/catalog', yandexRegionId: '213', regionName: '' } });
-    const created = await call('/api/tasks/', 'POST', { projectId: project.id, targetExecutions: 3, status: 'paused' });
+    const created = await call('/api/tasks/', 'POST', { projectId: project.id, targetExecutions: 3, concurrency: 2, status: 'paused' });
     assert.equal(created.status, 201); task = created.data; profileId = task.profileId;
-    assert.equal(task.currentExecutions, 0); assert.equal(task.targetExecutions, 3);
+    assert.equal(task.currentExecutions, 0); assert.equal(task.targetExecutions, 3); assert.equal(task.concurrency, 2);
     assert.equal(task.url, project.targetUrl); assert.equal(task.project.id, project.id); assert.ok(!('targetDomain' in task));
     const rows = (await call(`/api/tasks/?projectId=${project.id}`)).data;
     assert.deepEqual(rows.map(row => row.id), [task.id]);
     assert.equal((await call(`/api/tasks/${task.id}/`, 'PATCH', { targetExecutions: 5 })).data.targetExecutions, 5);
+    assert.equal((await call(`/api/tasks/${task.id}/`, 'PATCH', { concurrency: 4 })).data.concurrency, 4);
+    for (const invalid of [0, -1, 1.5, 10001]) assert.equal((await call(`/api/tasks/${task.id}/`, 'PATCH', { concurrency: invalid })).status, 400);
     assert.equal((await call(`/api/tasks/${task.id}/`, 'PATCH', { currentExecutions: 99 })).status, 400);
     assert.equal((await call('/api/tasks/', 'POST', { projectId: project.id, targetDomain: 'other.test' })).status, 400);
     assert.equal((await call('/api/tasks/', 'POST', { projectId: project.id, targetExecutions: 0 })).status, 400);
@@ -98,15 +101,30 @@ test('profile statuses and warmup metadata follow the new schema', async () => {
   const id = created.data.id;
   const prisma = new PrismaClient();
   try {
-    assert.equal(created.data.status, 'new'); assert.equal(created.data.warmupScore, 0);
-    for (const status of ['warming_up', 'ready', 'banned', 'new']) assert.equal((await call(`/api/profiles/${id}/`, 'PATCH', { status })).data.status, status);
-    const warmup = await call('/api/tasks/', 'POST', { taskType: 'warmup', profileId: id, status: 'paused' });
-    assert.equal(warmup.status, 201);
-    try { assert.equal((await prisma.profile.findUniqueOrThrow({ where: { id } })).status, 'warming_up'); }
-    finally { await call(`/api/tasks/${warmup.data.id}/`, 'DELETE'); }
-    assert.equal((await prisma.profile.findUniqueOrThrow({ where: { id } })).status, 'new');
+    assert.equal(created.data.status, 'queued'); assert.equal(created.data.warmupScore, 0);
+    for (const status of ['warming_up', 'ready', 'new']) assert.equal((await call(`/api/profiles/${id}/`, 'PATCH', { status })).status, 400);
+    assert.equal((await prisma.warmupJob.findUniqueOrThrow({ where: { profileId: id } })).status, 'queued');
+    assert.equal((await call('/api/tasks/', 'POST', { taskType: 'warmup', profileId: id })).status, 400);
+    assert.equal((await call(`/api/profiles/${id}/`, 'PATCH', { status: 'banned' })).data.status, 'banned');
     assert.equal((await call(`/api/profiles/${id}/`, 'PATCH', { status: 'active' })).status, 400);
     assert.equal((await call(`/api/profiles/${id}/`, 'PATCH', { warmupScore: 99 })).status, 400);
     assert.equal((await call(`/api/profiles/${id}/`, 'PATCH', { isEnabled: false })).data.isEnabled, false);
   } finally { await prisma.profile.delete({ where: { id } }); await prisma.$disconnect(); }
+});
+
+test('project schedule persists, validates hours/timezone and survives unrelated updates', async () => {
+  let id;
+  try {
+    const created = await call('/api/projects/', 'POST', { name: 'Schedule fixture', targetUrl: 'https://example.test', yandexRegionId: '213' });
+    assert.equal(created.status, 201); id = created.data.id;
+    assert.equal(created.data.scheduleHours, '1'.repeat(168)); assert.equal(created.data.scheduleTimezone, 'Europe/Moscow');
+    const changed = await call(`/api/projects/${id}/`, 'PATCH', { scheduleHours: '0'.repeat(168), scheduleTimezone: 'Asia/Yekaterinburg' });
+    assert.equal(changed.status, 200); assert.equal(changed.data.scheduleHours, '0'.repeat(168));
+    assert.equal((await call(`/api/projects/${id}/`, 'PATCH', { name: 'Renamed' })).data.scheduleHours, '0'.repeat(168));
+    assert.equal((await call(`/api/projects/${id}/`)).data.scheduleTimezone, 'Asia/Yekaterinburg');
+    for (const invalid of [{ scheduleHours: '' }, { scheduleHours: '1'.repeat(169) }, { scheduleHours: 'x'.repeat(168) }, { scheduleHours: null }, { scheduleTimezone: 'Invalid/Zone' }, { scheduleTimezone: '' }]) {
+      assert.equal((await call(`/api/projects/${id}/`, 'PATCH', invalid)).status, 400);
+    }
+    assert.equal((await call(`/api/projects/${id}/`)).data.scheduleHours, '0'.repeat(168));
+  } finally { if (id) await call(`/api/projects/${id}/`, 'DELETE'); }
 });

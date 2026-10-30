@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "profileId": "legacy-ios-fixture",
+  "mobileOS": "ios",
+  "canvasSeed": 1486517884,
+  "createdAt": "2026-10-14T12:24:41.288Z",
+  "savedAt": null,
+  "fingerprint": {
+    "navigator": {
+      "userAgent": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.8909.1591 Mobile Safari/537.36",
+      "language": "en-US",
+      "languages": [
+        "en-US"
+      ],
+      "maxTouchPoints": 3,
+      "userAgentData": null,
+      "platform": "Linux x86_64",
+      "deviceMemory": 8,
+      "hardwareConcurrency": 64,
+      "product": "Gecko",
+      "productSub": "20030107",
+      "vendor": "Google Inc.",
+      "vendorSub": null,
+      "doNotTrack": null,
+      "appCodeName": "Mozilla",
+      "appName": "Netscape",
+      "appVersion": "5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.8909.1591 Mobile Safari/537.36",
+      "oscpu": null,
+      "extraProperties": {
+        "vendorFlavors": [],
+        "globalPrivacyControl": null,
+        "pdfViewerEnabled": null,
+        "installedApps": []
+      },
+      "webdriver": false
+    },
+    "screen": {
+      "width": 375,
+      "height": 812,
+      "devicePixelRatio": 1,
+      "innerWidth": 375,
+      "innerHeight": 812,
+      "availTop": 0,
+      "availLeft": 0,
+      "pageXOffset": 0,
+      "pageYOffset": 0,
+      "screenX": 0,
+      "hasHDR": false,
+      "availWidth": 375,
+      "availHeight": 812,
+      "clientWidth": 375,
+      "clientHeight": 812,
+      "outerWidth": 375,
+      "outerHeight": 812,
+      "colorDepth": 24,
+      "pixelDepth": 24
+    },
+    "videoCard": {
+      "vendor": "Google Inc. (Google)",
+      "renderer": "ANGLE (Google, Vulkan 1.3.0 (SwiftShader Device (Subzero) (0x0000C0DE)), SwiftShader driver)"
+    },
+    "audioCodecs": {
+      "ogg": "probably",
+      "mp3": "probably",
+      "wav": "probably",
+      "m4a": "maybe",
+      "aac": "probably"
+    },
+    "videoCodecs": {
+      "ogg": "",
+      "h264": "probably",
+      "webm": "probably"
+    },
+    "pluginsData": {
+      "plugins": [],
+      "mimeTypes": []
+    },
+    "multimediaDevices": {
+      "speakers": [],
+      "micros": [],
+      "webcams": []
+    },
+    "fonts": [],
+    "mockWebRTC": false,
+    "slim": false
+  },
+  "headers": {
+    "upgrade-insecure-requests": "1",
+    "user-agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 11_0 like Mac OS X) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.8909.1591 Mobile Safari/537.36",
+    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/heif,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+    "accept-encoding": "gzip, deflate, br, zstd",
+    "accept-language": "en-US"
+  },
+  "cookies": [],
+  "origins": []
+}

@@ -18,7 +18,7 @@ async function migrations() {
   return Promise.all(names.map(name => readFile(join(root, 'prisma/migrations', name, 'migration.sql'), 'utf8')));
 }
 
-test('donor sampling selects three distinct sites from the editable pool of twenty', () => {
+test('donor sampling selects three distinct sites from the default pool of twenty', () => {
   assert.equal(donors.donorSites.length, 20);
   assert.equal(new Set(donors.donorSites).size, 20);
   const selected = selectDonorSites();
@@ -64,20 +64,22 @@ test('migration preserves task fields/session IDs and groups shared IDs into rel
   } finally { db.close(); }
 });
 
-test('warmup visits three local origins without OpenAI, saves state once, and preserves it on failure/abort', { timeout: 30_000 }, async () => {
+// Both successful and failing visits include real 0.8–2.0 second swipes.
+for (const storageMode of ['snapshot', 'persistent']) test(`${storageMode}: warmup visits three local origins without OpenAI, saves state once, and preserves it on failure/abort`, { timeout: 120_000 }, async () => {
   const dir = await mkdtemp(join(tmpdir(), 'orbit-warmup-'));
   const databasePath = join(dir, 'test.db');
   const db = new DatabaseSync(databasePath); for (const sql of await migrations()) db.exec(sql); db.close();
   const prisma = new PrismaClient({ datasources: { db: { url: `file:${databasePath}` } } });
   const visits = []; const servers = []; let failDonor = false; let proxy;
   try {
+    await prisma.settings.create({ data: { id: 1, fingerprintMode: 'local', fingerprintDevicePreset: 's23_android14' } });
     for (let index = 0; index < 3; index++) {
       const server = createServer((req, res) => {
         visits.push({ index, path: req.url });
         res.writeHead(failDonor && index === 2 && req.url === '/next' ? 503 : 200, {
           'Content-Type': 'text/html', 'Set-Cookie': `donor_${index}=synthetic-cookie; Path=/; Max-Age=3600`,
         });
-        res.end(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><script>localStorage.setItem('donor_${index}', ${JSON.stringify('synthetic-history')});</script><main style="height:4000px">Local donor ${index}</main><a href="/next">Internal</a><a href="https://example.org">External</a><a href="/delete">Delete</a>`);
+        res.end(`<!doctype html><meta name="viewport" content="width=device-width,initial-scale=1"><script>localStorage.setItem('donor_${index}', ${JSON.stringify('synthetic-history')});</script><main style="height:1200px">Local donor ${index}</main><a href="/next">Internal</a><a href="https://example.org">External</a><a href="/delete">Delete</a>`);
       });
       await listen(server); servers.push(server);
     }
@@ -92,14 +94,17 @@ test('warmup visits three local origins without OpenAI, saves state once, and pr
       upstream.on('error', () => { res.writeHead(502); res.end(); }); req.pipe(upstream);
     });
     await listen(proxy);
-    const task = await prisma.task.create({ data: { taskType: 'warmup', profile: { create: { name: 'Warmup fixture' } } } });
+    const task = await prisma.task.create({ data: { taskType: 'warmup', profile: { create: { name: 'Warmup fixture', storageMode } } } });
     const proxyRow = await prisma.proxy.create({ data: { host: '127.0.0.1', port: proxy.address().port, username: 'fixture', password: 'synthetic-password' } });
     const events = [];
-    const config = { profilesDirectory: join(dir, 'profiles'), headless: true, navigationTimeoutMs: 5000, proxyScheme: 'http', proxyCheckUrl: `${sites[0]}health` };
+    const config = { profilesDirectory: join(dir, 'profiles'), chromiumExecutablePath: process.env.ORBIT_TEST_CHROMIUM_EXECUTABLE_PATH, headless: true, navigationTimeoutMs: 5000, proxyScheme: 'http', proxyIPCheckMode: 'off', proxyCheckUrl: `${sites[0]}health`, warmupSites: sites };
     const options = { prisma, task, proxy: proxyRow, config, log: (event, details) => events.push({ event, ...details }),
-      warmupRunner: (page, params) => performWarmup(page, { ...params, sites, waitFor: async () => {} }),
+      warmupRunner: (page, params) => { assert.deepEqual(params.sites, sites); return performWarmup(page, { ...params, waitFor: async () => {} }); },
     };
-    assert.equal(await runTask(options), true);
+    assert.equal(await runTask(options).catch(error => {
+      if (error.diagnostics) error.message += ` ${JSON.stringify(error.diagnostics)}`;
+      throw error;
+    }), true);
     const row = await prisma.task.findUniqueOrThrow({ where: { id: task.id } });
     assert.equal(row.status, 'completed'); assert.equal(row.currentExecutions, 1);
     for (let index = 0; index < 3; index++) assert.ok(visits.some(visit => visit.index === index && visit.path === '/next'));
@@ -110,12 +115,18 @@ test('warmup visits three local origins without OpenAI, saves state once, and pr
     const scrolls = events.filter(event => event.event === 'warmup_scroll');
     for (let step = 1; step <= 3; step++) {
       const group = scrolls.filter(event => event.step === step);
-      assert.ok(group.length >= 2 && group.length <= 3);
-      assert.ok(group.some(event => event.pixels > 0) && group.some(event => event.pixels < 0));
+      const down = group.filter(event => event.pixels > 0), up = group.filter(event => event.pixels < 0);
+      assert.ok(down.length >= 2 && down.length <= 4);
+      assert.ok(down.every(event => event.pixels >= 220 && event.pixels <= 680));
+      assert.ok(up.length <= 1);
+      if (up.length) { assert.equal(group.at(-1), up[0]); assert.ok(up[0].pixels >= -280 && up[0].pixels <= -120); }
+      assert.ok(group[0].pixels > 0);
     }
     for (const event of events.filter(event => event.event === 'warmup_wait')) {
-      assert.ok(event.durationMs >= (event.phase === 'initial' ? 3000 : 5000));
-      assert.ok(event.durationMs <= (event.phase === 'initial' ? 7000 : 10_000));
+      const ranges = { initial: [450, 6600], after_link: [450, 6600], after_scroll: [1800, 4200] };
+      const [min, max] = ranges[event.phase];
+      assert.ok(event.plannedMs >= min && event.plannedMs <= max);
+      assert.ok(event.durationMs >= 0, 'actual elapsed time is separate from the injected no-op wait');
     }
     const path = join(config.profilesDirectory, `${task.profileId}.json`);
     const previous = await readFile(path, 'utf8'); const state = JSON.parse(previous);

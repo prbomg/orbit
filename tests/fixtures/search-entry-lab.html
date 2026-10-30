@@ -1,0 +1,39 @@
+<!doctype html>
+<html lang="ru"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Проверка мобильного ввода</title>
+<style>body{font:17px system-ui;max-width:640px;margin:24px auto;padding:0 18px;background:#101722;color:#eef3fa}input,button,select{font:inherit;padding:12px;margin:6px 0;box-sizing:border-box;max-width:100%}input{width:100%}button{cursor:pointer}#suggestions button{display:block;width:100%;text-align:left}pre{white-space:pre-wrap;overflow-wrap:anywhere}label{display:block}</style>
+<h1>Проверка мобильного ввода</h1>
+<p>Тестовая фраза: «кофе рядом». Откройте страницу через адресную строку, коснитесь поля и введите запрос. Для второго сценария выберите подсказку. Страница сохраняет события только в памяти этой вкладки.</p>
+<label>Сценарий <select id="scenario"><option value="typed">Самостоятельный ввод</option><option value="suggestion">Выбор подсказки</option></select></label>
+<form><label for="query">Запрос</label><input id="query" name="text" type="search" autocomplete="off" enterkeyhint="search"><div id="suggestions"></div><button type="submit">Найти</button></form>
+<p id="result" role="status"></p><button id="reset">Начать заново</button> <button id="download">Скачать измерения</button><pre id="summary"></pre>
+<script>
+const input=document.querySelector('#query'),scenario=document.querySelector('#scenario'),suggestions=document.querySelector('#suggestions');
+let started=performance.now(),events=[];
+const record=(type,data={})=>{if(events.length<5000)events.push({atMs:Math.round(performance.now()-started),type,...data});};
+window.entryLabReport=()=>({version:1,scenario:scenario.value,events:[...events]});
+for(const type of ['pointerdown','focusin','beforeinput','input','compositionstart','compositionupdate','compositionend','keydown','keyup'])document.addEventListener(type,event=>{
+ if(event.target!==input)return;
+ record(type,{trusted:event.isTrusted,inputType:event.inputType||null,pointerType:event.pointerType||null,dataLength:typeof event.data==='string'?[...event.data].length:0,valueLength:[...input.value].length});
+});
+const viewport=()=>record('viewport',{width:Math.round(visualViewport?.width||innerWidth),height:Math.round(visualViewport?.height||innerHeight)});
+visualViewport?.addEventListener('resize',viewport);viewport();
+input.addEventListener('input',()=>{
+ suggestions.replaceChildren();
+ if(scenario.value!=='suggestion'||!input.value.trim())return;
+ for(const text of ['кофе рядом','кофейня рядом']){
+  if(!text.startsWith(input.value.toLowerCase()))continue;
+  const button=document.createElement('button');button.type='button';button.textContent=text;
+  button.onclick=()=>{input.value=text;suggestions.replaceChildren();record('suggestion_selected',{valueLength:[...text].length});};suggestions.append(button);
+ }
+});
+document.querySelector('form').addEventListener('submit',event=>{
+ event.preventDefault();record('submitted',{valueLength:[...input.value].length});
+ document.querySelector('#result').textContent='Запрос принят тестовой страницей';
+ const times=events.filter(e=>e.type==='input').map(e=>e.atMs),intervals=times.slice(1).map((t,i)=>t-times[i]);
+ document.querySelector('#summary').textContent=JSON.stringify({events:events.length,inputEvents:times.length,intervalsMs:intervals},null,2);
+});
+const reset=()=>{input.value='';suggestions.replaceChildren();events=[];started=performance.now();document.querySelector('#result').textContent='';document.querySelector('#summary').textContent='';viewport();};
+scenario.addEventListener('change',reset);document.querySelector('#reset').onclick=reset;
+document.querySelector('#download').onclick=()=>{const url=URL.createObjectURL(new Blob([JSON.stringify(window.entryLabReport(),null,2)],{type:'application/json'}));const link=document.createElement('a');link.href=url;link.download='search-entry-measurements.json';link.click();setTimeout(()=>URL.revokeObjectURL(url),1000);};
+</script></html>

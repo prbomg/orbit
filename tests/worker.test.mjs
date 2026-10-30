@@ -1,6 +1,7 @@
+import {mobileProfileFixture} from './helpers/mobile-profile-fixture.mjs';
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readFile, readdir, rm, access } from 'node:fs/promises';
+import { mkdtemp, readFile, readdir, rm, access, mkdir, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { resolve, join } from 'node:path';
 import { createServer, request as httpRequest } from 'node:http';
@@ -10,11 +11,30 @@ import { PrismaClient } from '@prisma/client';
 import { bezierPoint } from '../worker/behavior.mjs';
 import { loadConfig } from '../worker/config.mjs';
 import { parseActionPlan, PlanValidationError } from '../worker/ai-plan.mjs';
+
+import { executeWarmup } from '../worker/warmup-service.mjs';
+import { claimWarmup } from '../worker/pool-scheduler.mjs';
 import { runTask } from '../worker/runner.mjs';
 import { performSearchAndClick } from '../worker/search.mjs';
 import { installSearchFixture } from './fixtures/search-pages.mjs';
+import snapshots from '../utils/profileSnapshots.js';
+import { attestedSession } from './helpers/attestation.mjs';
 
 const root = resolve(import.meta.dirname, '..');
+// Reuse only real successful offline qualification from an earlier fixture.
+// Production still validates its runtime/source key before accepting this cache.
+const qualifiedRuntimes = new Map();
+function fixtureConfig(fixture) {
+  const previous = { ...process.env };
+  Object.assign(process.env, fixture.env);
+  try { return loadConfig(); }
+  finally {
+    for (const key of Object.keys(fixture.env)) {
+      if (previous[key] === undefined) delete process.env[key]; else process.env[key] = previous[key];
+    }
+  }
+}
+
 const listen = server => new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const stop = server => new Promise(resolve => { server.closeAllConnections(); server.close(resolve); });
 const actions = [
@@ -35,13 +55,15 @@ async function fixture() {
   }
   database.close();
   const prisma = new PrismaClient({ datasources: { db: { url: `file:${databasePath}` } } });
-  let failHealth = false; let authenticatedRequests = 0;
+  for (const row of qualifiedRuntimes.values()) await prisma.browserQualification.create({ data: row });
+  let failHealth = false; let clearHealthStorage = false; let authenticatedRequests = 0;
   let aiContent = JSON.stringify(actions); let aiStatus = 200; let aiDelay = 0;
   let aiRequest; let proxyCountAtAiRequest; let nextVisits = 0; let redirectExternal = false;
   let captchaType; let captchaPath = '/page'; let captchaRequest; let captchaPolls = 0; let captchaNeverReady = false; let captchaProviderError = false; let autoSubmitCaptcha = false;
   let submittedToken; let rotationFailed = false; let rotatedAt; let firstBrowserTrafficAt;
   const observed = []; const cookiesOnTarget = [];
   const target = createServer(async (req, res) => {
+    if (req.url?.startsWith('/ip')) { res.writeHead(200, { 'Content-Type': 'application/json' }); res.end(JSON.stringify({ip:req.headers['x-fixture-proxy']?'198.51.100.7':'203.0.113.10'})); return; }
     if (req.url === '/fingerprint-state') {
       let body = ''; for await (const chunk of req) body += chunk;
       observed.push({ headers: req.headers, data: JSON.parse(body) });
@@ -64,6 +86,7 @@ async function fixture() {
       res.writeHead(303, { Location: '/accepted' }); res.end(); return;
     }
     if (req.url === '/health' && failHealth) { res.writeHead(503); res.end('unavailable'); return; }
+    if (req.url === '/health' && clearHealthStorage) { res.writeHead(200, { 'Content-Type': 'text/html' }); res.end('<!doctype html><script>localStorage.clear()</script>'); return; }
     if (req.url === '/next') {
       nextVisits++;
       if (redirectExternal) { res.writeHead(302, { Location: 'https://example.org/' }); res.end(); return; }
@@ -98,14 +121,14 @@ async function fixture() {
     if (url.hostname !== '127.0.0.1' || Number(url.port) !== port) { res.writeHead(403); res.end(); return; }
     authenticatedRequests++;
     firstBrowserTrafficAt ??= Date.now();
-    const headers = { ...req.headers }; delete headers['proxy-authorization'];
+    const headers = { ...req.headers, 'x-fixture-proxy': '1' }; delete headers['proxy-authorization'];
     const upstream = httpRequest(url, { method: req.method, headers }, response => {
       res.writeHead(response.statusCode, response.headers); response.pipe(res);
     });
     upstream.on('error', () => { res.writeHead(502); res.end(); }); req.pipe(upstream);
   });
   // Deny background external CONNECT requests: all test traffic stays local.
-  proxy.on('connect', (_req, socket) => socket.end('HTTP/1.1 403 Forbidden\r\n\r\n'));
+  proxy.on('connect', (_req, socket) => { socket.on('error', () => socket.destroy()); socket.end('HTTP/1.1 403 Forbidden\r\n\r\n'); });
   await listen(proxy);
   const ai = createServer(async (req, res) => {
     assert.equal(req.url, '/v1/chat/completions');
@@ -138,11 +161,17 @@ async function fixture() {
     }
   });
   await listen(captcha);
-  const task = await prisma.task.create({ data: { url: `${targetUrl}/page`, targetExecutions: 100, targetKeywords: [], profile: { create: { name: 'Local test profile' } } } });
+  const project = await prisma.project.create({ data: { name: 'Fixture', targetUrl: `${targetUrl}/health`, yandexRegionId: '213', regionName: '' } });
+  const task = await prisma.task.create({ data: { project: { connect: { id: project.id } }, url: `${targetUrl}/page`, targetExecutions: 100, targetKeywords: [], profile: { create: { name: 'Local test profile', status: 'ready', warmedAt: new Date(), fingerprintState: 'verified', readinessVerifiedAt: new Date(), readinessValidUntil: new Date(Date.now()+86400000), sessionCheck: { status: 'passed', sourceSavedAt: new Date().toISOString() } } } } });
+  await mkdir(join(dir, 'profiles'));
+  await writeFile(join(dir, 'profiles', `${task.profileId}.json`), JSON.stringify(snapshots.stampSnapshot({ ...mobileProfileFixture(task.profileId), savedAt: new Date().toISOString(), cookies: [{name:'fixture_ready',value:'synthetic-ready',domain:'127.0.0.1',path:'/',expires:Date.now()/1000+3600,secure:false,httpOnly:true,sameSite:'Lax'}] })));
+  const initialSaved = JSON.parse(await readFile(join(dir, 'profiles', `${task.profileId}.json`), 'utf8'));
+  await prisma.profile.update({where:{id:task.profileId},data:{snapshotId:initialSaved.snapshot.id,readinessVersion:1,sessionCheck:attestedSession({snapshotId:initialSaved.snapshot.id,savedAt:initialSaved.savedAt,passportHash:initialSaved.snapshot.passportHash}).sessionCheck}});
   const proxyRow = await prisma.proxy.create({ data: { host: '127.0.0.1', port: proxy.address().port, username, password, isActive: true } });
   return {
     prisma, task, proxyRow, databasePath, authCount: () => authenticatedRequests,
     failHealth: () => { failHealth = true; },
+    clearHealthStorage: () => { clearHealthStorage = true; },
     aiRequest: () => aiRequest, proxyCountAtAiRequest: () => proxyCountAtAiRequest, nextVisits: () => nextVisits,
     setAi: ({ content = aiContent, status = 200, delay = 0 }) => { aiContent = content; aiStatus = status; aiDelay = delay; },
     redirectExternal: () => { redirectExternal = true; },
@@ -159,15 +188,19 @@ async function fixture() {
     },
     captchaRequest: () => captchaRequest, captchaPolls: () => captchaPolls, submittedToken: () => submittedToken,
     profilePath: join(dir, 'profiles', `${task.profileId}.json`), observed, cookiesOnTarget,
-    env: { ...process.env, WORKER_PROFILES_DIR: join(dir, 'profiles'), DATABASE_URL: `file:${databasePath}`, WORKER_PLAN_MODE: 'openai', OPENAI_API_KEY: 'synthetic-openai-key', OPENAI_BASE_URL: `http://127.0.0.1:${ai.address().port}/v1`, WORKER_OPENAI_TIMEOUT_MS: '15000', WORKER_CAPTCHA_BASE_URL: `http://127.0.0.1:${captcha.address().port}`, WORKER_CAPTCHA_POLL_MS: '50', WORKER_CAPTCHA_TIMEOUT_MS: '15000', WORKER_PROXY_CHECK_URL: `${targetUrl}/health`, WORKER_MIN_DWELL_MS: '3000', WORKER_MAX_DWELL_MS: '6000', WORKER_NAVIGATION_TIMEOUT_MS: '15000' },
-    async cleanup() { await prisma.$disconnect(); await stop(captcha); await stop(ai); await stop(proxy); await stop(target); await rm(dir, { recursive: true, force: true }); },
+    env: { ...process.env, PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH: process.env.ORBIT_TEST_CHROMIUM_EXECUTABLE_PATH, WORKER_PROFILES_DIR: join(dir, 'profiles'), DATABASE_URL: `file:${databasePath}`, WORKER_PLAN_MODE: 'openai', OPENAI_API_KEY: 'synthetic-openai-key', OPENAI_BASE_URL: `http://127.0.0.1:${ai.address().port}/v1`, WORKER_OPENAI_TIMEOUT_MS: '15000', WORKER_CAPTCHA_BASE_URL: `http://127.0.0.1:${captcha.address().port}`, WORKER_CAPTCHA_POLL_MS: '50', WORKER_CAPTCHA_TIMEOUT_MS: '15000', WORKER_PROXY_CHECK_URL: `${targetUrl}/health`, WORKER_PROXY_IP_CHECK_URL: `${targetUrl}/ip`, WORKER_DIRECT_IP_CHECK_URL: `${targetUrl}/ip`, WORKER_PROXY_IP_CHECK_MODE: 'required', WORKER_MIN_DWELL_MS: '3000', WORKER_MAX_DWELL_MS: '19000', WORKER_NAVIGATION_TIMEOUT_MS: '15000' },
+    async cleanup() {
+      for (const row of await prisma.browserQualification.findMany({ where: { status: 'passed' } })) qualifiedRuntimes.set(row.runtimeVersion, row);
+      await prisma.$disconnect(); await stop(captcha); await stop(ai); await stop(proxy); await stop(target); await rm(dir, { recursive: true, force: true }); },
   };
 }
 
-async function runWorker(env, { abort = false, abortEvent = '"action":"pause"' } = {}) {
+// The first uncached DB qualifies all catalog devices. That offline work can
+// exceed 40 seconds before the scenario starts; keep it inside the test budget.
+async function runWorker(env, { abort = false, abortEvent = '"action":"pause"', timeoutMs = 120_000 } = {}) {
   const child = spawn(process.execPath, ['worker/index.js', '--once'], { cwd: root, env, stdio: ['ignore', 'pipe', 'pipe'] });
   let output = ''; let stderr = ''; let signalled = false;
-  const timer = setTimeout(() => child.kill('SIGKILL'), 50_000);
+  const timer = setTimeout(() => child.kill('SIGKILL'), timeoutMs);
   child.stdout.on('data', data => {
     output += data;
     if (abort && !signalled && output.includes(abortEvent)) { signalled = true; child.kill('SIGTERM'); }
@@ -182,15 +215,19 @@ async function assertUnlocked(path) {
   await assert.rejects(access(`${path}.worker.lock`), { code: 'ENOENT' });
 }
 
-test('default dwell is 1–2 minutes and Bezier endpoints stay exact', () => {
-  const config = loadConfig();
-  assert.equal(config.minDwellMs, 60_000); assert.equal(config.maxDwellMs, 120_000);
-  const points = [{ x: 0, y: 0 }, { x: 10, y: 50 }, { x: 70, y: 10 }, { x: 100, y: 100 }];
-  assert.deepEqual(bezierPoint(0, ...points), points[0]);
-  assert.deepEqual(bezierPoint(1, ...points), points[3]);
+test('default dwell is 1–2 minutes and Bezier endpoints stay exact', async () => {
+  const f = await fixture(), previous = process.env.DATABASE_URL;
+  try {
+    process.env.DATABASE_URL = `file:${f.databasePath}`;
+    const config = loadConfig();
+    assert.equal(config.minDwellMs, 60_000); assert.equal(config.maxDwellMs, 120_000);
+    const points = [{ x: 0, y: 0 }, { x: 10, y: 50 }, { x: 70, y: 10 }, { x: 100, y: 100 }];
+    assert.deepEqual(bezierPoint(0, ...points), points[0]);
+    assert.deepEqual(bezierPoint(1, ...points), points[3]);
+  } finally { if (previous === undefined) delete process.env.DATABASE_URL; else process.env.DATABASE_URL = previous; await f.cleanup(); }
 });
 
-test('rotation waits 15 seconds before Chromium and reCAPTCHA iframe is solved and submitted', { timeout: 55_000 }, async () => {
+test('rotation waits 15 seconds before Chromium and reCAPTCHA iframe is solved and submitted', { timeout: 180_000 }, async () => {
   const f = await fixture();
   try {
     await f.enableRotation(); await f.enableCaptcha('recaptcha');
@@ -212,11 +249,13 @@ test('rotation waits 15 seconds before Chromium and reCAPTCHA iframe is solved a
   } finally { await f.cleanup(); }
 });
 
-test('SmartCaptcha appearing after an AI action is submitted without consuming the behavior budget', { timeout: 40_000 }, async () => {
+test('SmartCaptcha appearing after an AI action is submitted without consuming the behavior budget', { timeout: 180_000 }, async () => {
   const f = await fixture();
   try {
     await f.enableCaptcha('smartcaptcha', { late: true, autoSubmit: true });
-    const result = await runWorker({ ...f.env, WORKER_MIN_DWELL_MS: '3000', WORKER_MAX_DWELL_MS: '3000', WORKER_CAPTCHA_POLL_MS: '1000' });
+    // Ten actions include 0.8–2.0 second swipes and their release phases.
+    // CAPTCHA time must still be excluded from the behavior budget.
+    const result = await runWorker({ ...f.env, WORKER_MIN_DWELL_MS: '19000', WORKER_MAX_DWELL_MS: '19000', WORKER_CAPTCHA_POLL_MS: '1000' });
     assert.equal(result.code, 0, result.output + result.stderr);
     assert.equal(f.captchaRequest().task.type, 'YandexSmartCaptchaTask');
     assert.equal(f.captchaRequest().task.websiteKey, 'fixture-smartcaptcha-sitekey');
@@ -242,7 +281,7 @@ test('rotation failure and cancellation never start Chromium', async () => {
   }
 });
 
-test('captcha missing key, provider failure, timeout and SIGTERM leave count unchanged', { timeout: 40_000 }, async () => {
+test('captcha missing key, provider failure, timeout and SIGTERM leave count unchanged', { timeout: 180_000 }, async () => {
   for (const scenario of ['missingKey', 'providerError', 'neverReady', 'abort']) {
     const f = await fixture();
     try {
@@ -256,10 +295,12 @@ test('captcha missing key, provider failure, timeout and SIGTERM leave count unc
   }
 });
 
-test('real Chromium injects a mobile profile before document scripts and reuses fingerprint/cookies', { timeout: 50_000 }, async () => {
+test('real Chromium injects a mobile profile before document scripts and reuses fingerprint/cookies', { timeout: 180_000 }, async () => {
   const f = await fixture();
   try {
-    const result = await runWorker(f.env);
+    // A fresh test database qualifies all catalog devices before the first
+    // task. Include that work in this integration test's subprocess budget.
+    const result = await runWorker(f.env, { timeoutMs: 120_000 });
     assert.equal(result.code, 0, result.output + result.stderr);
     assert.ok(result.output.includes('session_completed'), result.output);
     assert.ok(!result.output.includes('synthetic-password'));
@@ -300,6 +341,8 @@ test('real Chromium injects a mobile profile before document scripts and reuses 
     }
     const initialCanvas = f.observed[0].data.canvas;
     const observedBeforeRepeat = f.observed.length;
+    const otherProject = await f.prisma.project.create({ data: { name: 'Other project', targetUrl: f.task.url.replace('/page','/health'), yandexRegionId: '213', regionName: '' } });
+    await f.prisma.task.update({ where: { id: f.task.id }, data: { projectId: otherProject.id } });
     const repeated = await runWorker(f.env);
     assert.equal(repeated.code, 0, repeated.output + repeated.stderr);
     assert.ok(repeated.output.includes('profile_loaded'));
@@ -312,6 +355,8 @@ test('real Chromium injects a mobile profile before document scripts and reuses 
     assert.equal((await f.prisma.task.findUniqueOrThrow({ where: { id: f.task.id } })).currentExecutions, 2);
     const previousFile = await readFile(f.profilePath, 'utf8');
     f.failHealth();
+    const thirdProject = await f.prisma.project.create({ data: { name: 'Third project', targetUrl: f.task.url.replace('/page','/health'), yandexRegionId: '213', regionName: '' } });
+    await f.prisma.task.update({ where: { id: f.task.id }, data: { projectId: thirdProject.id } });
     const failed = await runWorker(f.env);
     assert.equal(failed.code, 1);
     assert.equal(await readFile(f.profilePath, 'utf8'), previousFile, 'Failed sessions must preserve the last successful profile');
@@ -319,11 +364,11 @@ test('real Chromium injects a mobile profile before document scripts and reuses 
   } finally { await f.cleanup(); }
 });
 
-test('search runner saves only a found target; miss closes Chromium without changing the last successful state/count', { timeout: 35_000 }, async () => {
+test('search runner saves only a found target; miss closes Chromium without changing the last successful state/count', { timeout: 180_000 }, async () => {
   const f = await fixture();
   try {
     const task = await f.prisma.task.update({ where: { id: f.task.id }, data: { url: '', searchEngine: 'yandex', searchQueries: ['qa'], project: { create: { name: 'Search fixture', targetUrl: 'https://target.test/', yandexRegionId: '213', regionName: '' } } } });
-    const config = { ...loadConfig(),
+    const config = { ...fixtureConfig(f), chromiumExecutablePath: process.env.ORBIT_TEST_CHROMIUM_EXECUTABLE_PATH,
       profilesDirectory: resolve(f.profilePath, '..'), headless: true,
       proxyCheckUrl: f.env.WORKER_PROXY_CHECK_URL, proxyScheme: 'http', navigationTimeoutMs: 15_000,
       openaiApiKey: f.env.OPENAI_API_KEY, openaiBaseUrl: f.env.OPENAI_BASE_URL, openaiTimeoutMs: 15_000,
@@ -339,10 +384,16 @@ test('search runner saves only a found target; miss closes Chromium without chan
         await page.context().addCookies([{ name: 'partitioned-session', value: 'synthetic-session', domain: 'example.com', path: '/',
           expires: -1, httpOnly: true, secure: true, sameSite: 'None', partitionKey: 'https://ya.ru', _crHasCrossSiteAncestor: true }]);
         await installSearchFixture(page.context(), { targetPage: miss ? null : 2, competitorPopup: true, targetPopup: true });
-        return performSearchAndClick(page, row, { ...params, engines: { yandex: { home: 'http://search.test/', domains: ['search.test'] } }, waitFor: async ms => { clock += ms; }, now: () => clock, targetDurationMs: 60_000 });
+        // This integration checks state/visit persistence. Native gestures and
+        // multi-page dwell budgets have dedicated browser tests.
+        return performSearchAndClick(page, row, { ...params, engines: { yandex: { home: 'http://search.test/', domains: ['search.test'] } }, waitFor: async ms => { clock += ms; }, now: () => clock, targetDurationMs: 1000 });
       },
     };
     assert.equal(await runTask(options), true);
+    // A successful run also verifies restored state in a separate Chromium.
+    assert.equal(browsers.length, 2);
+    assert.ok(browsers.every(browser => !browser.isConnected()));
+    const visits=await f.prisma.projectVisit.findMany({where:{projectId:task.projectId}});assert.equal(visits.length,1);assert.equal(visits[0].query,'qa');
     assert.equal((await f.prisma.task.findUniqueOrThrow({ where: { id: task.id } })).currentExecutions, 1);
     assert.equal((await f.prisma.task.findUniqueOrThrow({ where: { id: task.id } })).status, 'completed');
     const previous = await readFile(f.profilePath, 'utf8');
@@ -351,10 +402,12 @@ test('search runner saves only a found target; miss closes Chromium without chan
     miss = true;
     const restart = await f.prisma.task.update({ where: { id: task.id }, data: { status: 'running' } });
     assert.equal(await runTask({ ...options, task: restart }), false);
+    assert.equal(await f.prisma.projectVisit.count({where:{projectId:task.projectId}}),1);
     assert.equal(await readFile(f.profilePath, 'utf8'), previous);
     assert.equal((await f.prisma.task.findUniqueOrThrow({ where: { id: task.id } })).currentExecutions, 1);
     assert.ok(events.includes('session_search_missed'));
-    assert.equal(browsers.length, 2); assert.ok(browsers.every(browser => !browser.isConnected()));
+    // The missed run adds only its task browser; it does not publish/verify state.
+    assert.equal(browsers.length, 3); assert.ok(browsers.every(browser => !browser.isConnected()));
   } finally { await f.cleanup(); }
 });
 
@@ -371,15 +424,42 @@ test('plan validation rejects unknown actions, parameters, Markdown and bad arra
   assert.throws(() => parseActionPlan(JSON.stringify(actions), 1000), PlanValidationError);
 });
 
-test('local plan completes a direct task without an OpenAI key or API call', { timeout: 30_000 }, async () => {
+test('local plan completes a direct task without an OpenAI key or API call', { timeout: 180_000 }, async () => {
   const f = await fixture();
   try {
     const result = await runWorker({ ...f.env, WORKER_PLAN_MODE: 'local', OPENAI_API_KEY: '' });
     assert.equal(result.code, 0, result.output + result.stderr);
+    const ipEvent=result.output.split('\n').filter(line=>line.startsWith('{')).map(line=>JSON.parse(line)).find(event=>event.event==='proxy_ip_observed');
+    assert.equal(ipEvent?.browserIp,'198.51.100.7');
+    assert.equal(ipEvent?.workerIp,'203.0.113.10');
     assert.equal(f.aiRequest(), undefined);
     assert.ok(result.output.includes('"source":"local"'));
     assert.ok(f.authCount() > 0);
     assert.equal((await f.prisma.task.findUniqueOrThrow({ where: { id: f.task.id } })).currentExecutions, 1);
+    await assertUnlocked(f.databasePath);
+  } finally { await f.cleanup(); }
+});
+
+test('runner seeds persistent storage from the saved snapshot before visiting a site', { timeout: 180_000 }, async () => {
+  const f = await fixture();
+  try {
+    const source = JSON.parse(await readFile(f.profilePath, 'utf8'));
+    const before = await f.prisma.profile.update({ where: { id: f.task.profileId }, data: { storageMode: 'persistent', storageResetRequested: true } });
+    const result = await runWorker({ ...f.env, WORKER_PLAN_MODE: 'local', OPENAI_API_KEY: '' }, { timeoutMs: 120_000 });
+    assert.equal(result.code, 0, result.output + result.stderr);
+    assert.ok(result.output.includes('session_completed'), result.output);
+    const seeds = result.output.split('\n').filter(line => line.startsWith('{')).map(line => JSON.parse(line)).filter(e => e.event === 'profile_storage_seeded');
+    assert.equal(seeds.length, 1); assert.equal(seeds[0].sourceSnapshotId, source.snapshot.id);
+    assert.ok(f.cookiesOnTarget[0].includes('fixture_ready=synthetic-ready'));
+    const saved = JSON.parse(await readFile(f.profilePath, 'utf8'));
+    assert.equal(saved.snapshot.storageMode, 'persistent');
+    const after = await f.prisma.profile.findUniqueOrThrow({ where: { id: f.task.profileId } });
+    assert.equal(after.storageResetRequested, false); assert.equal(after.snapshotId, saved.snapshot.id);
+    assert.equal(+after.warmedAt, +before.warmedAt);
+    const marker = JSON.parse(await readFile(join(f.env.WORKER_PROFILES_DIR, 'browser-data', f.task.profileId, 'current', '.orbit-seeded-from-snapshot.json'), 'utf8'));
+    assert.equal(marker.sourceSnapshotId, source.snapshot.id);
+    const previous = JSON.parse(await readFile(f.profilePath + '.previous', 'utf8'));
+    assert.equal(previous.snapshot.id, source.snapshot.id);
     await assertUnlocked(f.databasePath);
   } finally { await f.cleanup(); }
 });
@@ -427,28 +507,31 @@ test('random links cannot redirect navigation to another origin', async () => {
   } finally { await f.cleanup(); }
 });
 
-test('a failed proxy check never increments the task', { timeout: 40_000 }, async () => {
+test('a failed proxy check never increments the task', { timeout: 180_000 }, async () => {
   const f = await fixture();
   try {
+    const previous = await readFile(f.profilePath, 'utf8');
     f.failHealth();
     const result = await runWorker(f.env);
     assert.equal(result.code, 1, result.output + result.stderr);
     assert.ok(result.output.includes('ProxyCheckError'), result.output);
-    await assert.rejects(access(f.profilePath), { code: 'ENOENT' });
+    assert.equal(await readFile(f.profilePath, 'utf8'), previous);
     assert.equal((await f.prisma.task.findUniqueOrThrow({ where: { id: f.task.id } })).currentExecutions, 0);
     await assertUnlocked(f.databasePath);
   } finally { await f.cleanup(); }
 });
 
-test('SIGTERM closes the session, releases the lock and leaves count unchanged', { timeout: 40_000 }, async () => {
+test('SIGTERM closes the session, releases the lock and leaves count unchanged', { timeout: 180_000 }, async () => {
   const f = await fixture();
   try {
+    const previous = await readFile(f.profilePath, 'utf8');
     const result = await runWorker({ ...f.env, WORKER_MIN_DWELL_MS: '60000', WORKER_MAX_DWELL_MS: '60000' }, { abort: true });
     assert.ok(result.signalled, result.output + result.stderr);
     assert.equal(result.code, 0, result.output + result.stderr);
     assert.ok(result.output.includes('worker_stopped'), result.output);
-    await assert.rejects(access(f.profilePath), { code: 'ENOENT' });
+    assert.equal(await readFile(f.profilePath, 'utf8'), previous);
     assert.equal((await f.prisma.task.findUniqueOrThrow({ where: { id: f.task.id } })).currentExecutions, 0);
+    assert.equal(await f.prisma.projectVisit.count({where:{projectId:f.task.projectId}}),1,'The site was opened even though the task did not complete');
     await assertUnlocked(f.databasePath);
   } finally { await f.cleanup(); }
 });
@@ -463,4 +546,77 @@ test('worker reads the OpenAI key from Settings before the environment fallback'
     assert.equal(result.code, 1); assert.ok(result.output.includes('PlanValidationError'));
     assert.ok(!result.output.includes('missing_api_key')); assert.equal(f.authCount(), 0);
   } finally { await f.cleanup(); }
+});
+
+test('dedicated warmup queue persists a real browser session before making a profile eligible', async () => {
+  const f = await fixture();
+  try {
+    await rm(f.profilePath);
+    await f.prisma.profile.update({where:{id:f.task.profileId},data:{status:'queued',warmedAt:null,snapshotId:null,readinessVersion:0,warmupJob:{create:{}}}});
+    const config={...fixtureConfig(f),chromiumExecutablePath:process.env.ORBIT_TEST_CHROMIUM_EXECUTABLE_PATH,profilesDirectory:resolve(f.profilePath,'..'),headless:true,proxyCheckUrl:f.env.WORKER_PROXY_CHECK_URL,proxyScheme:'http',navigationTimeoutMs:15000};
+    for(let stage=1;stage<=6;stage++){
+      const claim=await claimWarmup(f.prisma);assert.ok(claim);assert.equal(claim.job.currentStage,stage);
+      await executeWarmup({prisma:f.prisma,claim,config,signal:new AbortController().signal,
+        runner:options=>runTask({...options,warmupRunner:async page=>{await page.goto(f.task.url);await page.evaluate(()=>localStorage.setItem('warmup-fixture','saved'));}})});
+      const job=await f.prisma.warmupJob.findUniqueOrThrow({where:{profileId:f.task.profileId}});
+      if(stage<6){assert.equal(job.status,'waiting_stage');assert.equal((await f.prisma.profile.findUniqueOrThrow({where:{id:f.task.profileId}})).status,'queued');await f.prisma.warmupJob.update({where:{id:job.id},data:{nextStageAt:new Date(0),firstSessionAt:new Date(Date.now()-80*3600000),minReadyAt:new Date(0)}});}
+    }
+    const profile=await f.prisma.profile.findUniqueOrThrow({where:{id:f.task.profileId},include:{warmupJob:true}});
+    assert.equal(profile.status,'ready');assert.equal(profile.warmupJob.status,'completed');assert.ok(profile.warmedAt);
+    assert.equal(profile.sessionCheck.status,'passed');assert.equal(profile.sessionCheck.localStorageEntriesCount,2);assert.ok(profile.sessionCheck.sourceSavedAt);assert.ok(!JSON.stringify(profile.sessionCheck).includes('synthetic-local-storage'));
+    const saved=JSON.parse(await readFile(f.profilePath,'utf8'));assert.ok(saved.savedAt);
+    assert.ok(saved.origins.some(o=>o.localStorage.some(v=>v.name==='warmup-fixture'&&v.value==='saved')));
+    assert.equal(await f.prisma.task.count({where:{taskType:'warmup'}}),0);
+    assert.equal((await f.prisma.task.findUniqueOrThrow({where:{id:f.task.id}})).currentExecutions,0);
+  } finally {await f.cleanup();}
+});
+
+test('empty saved sessions fail stages 3 and 4 before the proxy-check page can add fresh storage', async () => {
+  for (const stage of [3, 4]) {
+    const f = await fixture();
+    try {
+      const previous = JSON.parse(await readFile(f.profilePath, 'utf8'));
+      const empty=snapshots.stampSnapshot({ ...previous, savedAt: new Date().toISOString(), cookies: [], origins: [] });
+      await writeFile(f.profilePath, JSON.stringify(empty));
+      await f.prisma.profile.update({ where: { id: f.task.profileId }, data: { status: 'queued', warmedAt: null, snapshotId:empty.snapshot.id,readinessVersion:0,warmupJob: { create: { currentStage: stage } } } });
+      const config = { ...fixtureConfig(f), chromiumExecutablePath: process.env.ORBIT_TEST_CHROMIUM_EXECUTABLE_PATH, profilesDirectory: resolve(f.profilePath, '..'), headless: true, proxyCheckUrl: f.env.WORKER_PROXY_CHECK_URL, proxyScheme: 'http', navigationTimeoutMs: 15000 };
+      const claim = await claimWarmup(f.prisma); assert.ok(claim);
+      await executeWarmup({ prisma: f.prisma, claim, config, signal: new AbortController().signal });
+      const profile = await f.prisma.profile.findUniqueOrThrow({ where: { id: f.task.profileId }, include: { warmupJob: true } });
+      assert.notEqual(profile.status, 'ready'); assert.equal(profile.warmedAt, null);
+      assert.equal(profile.sessionCheck.status, 'failed'); assert.equal(profile.sessionCheck.errorCode, 'profile_session_empty');
+      assert.equal(profile.warmupJob.errorCode, 'profile_session_empty');
+      assert.equal(profile.warmupJob.currentStage, stage);
+      assert.deepEqual(JSON.parse(await readFile(f.profilePath, 'utf8')).origins, []);
+    } finally { await f.cleanup(); }
+  }
+});
+
+test('final warmup refuses to publish state emptied after successful restoration', async () => {
+  const f = await fixture();
+  try {
+    await rm(f.profilePath);
+    await f.prisma.profile.update({ where: { id: f.task.profileId }, data: { status: 'queued', warmedAt: null,snapshotId:null,readinessVersion:0, warmupJob: { create: {} } } });
+    const config = { ...fixtureConfig(f), chromiumExecutablePath: process.env.ORBIT_TEST_CHROMIUM_EXECUTABLE_PATH, profilesDirectory: resolve(f.profilePath, '..'), headless: true, proxyCheckUrl: f.env.WORKER_PROXY_CHECK_URL, proxyScheme: 'http', navigationTimeoutMs: 15000 };
+    let previous;
+    for (let stage = 1; stage <= 6; stage++) {
+      if (stage === 6) { previous = await readFile(f.profilePath, 'utf8'); f.clearHealthStorage(); }
+      const claim = await claimWarmup(f.prisma); assert.ok(claim);
+      await executeWarmup({ prisma: f.prisma, claim, config, signal: new AbortController().signal,
+        runner: options => runTask({ ...options, warmupRunner: async page => { await page.goto(f.env.WORKER_PROXY_CHECK_URL); } }) });
+      if (stage < 6) await f.prisma.warmupJob.update({ where: { id: claim.job.id }, data: { nextStageAt: new Date(0), firstSessionAt:new Date(Date.now()-80*3600000),minReadyAt:new Date(0) } });
+    }
+    const profile = await f.prisma.profile.findUniqueOrThrow({ where: { id: f.task.profileId }, include: { warmupJob: true } });
+    assert.notEqual(profile.status, 'ready'); assert.equal(profile.sessionCheck.errorCode, 'profile_session_empty');
+    assert.equal(profile.warmupJob.errorCode, 'profile_session_empty');
+    assert.equal(await readFile(f.profilePath, 'utf8'), previous);
+  } finally { await f.cleanup(); }
+});
+
+test('configured direct visit obeys its duration and zero depth without requesting an AI plan', {timeout: 180_000},async()=>{
+ const f=await fixture();try{
+  await f.prisma.task.update({where:{id:f.task.id},data:{visitSettings:{minSeconds:15,maxSeconds:15,maxInternalTransitions:0,allowedSections:['/catalog']}}});
+  const result=await runWorker(f.env);assert.equal(result.code,0,result.stderr);assert.equal(f.aiRequest(),undefined);assert.equal(f.nextVisits(),0);
+  assert.match(result.output,/"event":"target_visit_started".*"durationMs":15000/);assert.equal((await f.prisma.task.findUnique({where:{id:f.task.id}})).currentExecutions,1);
+ }finally{await f.cleanup();}
 });

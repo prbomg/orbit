@@ -1,0 +1,3 @@
+# Recovery also covers containers whose persisted crond.reboot suppresses @reboot.
+@reboot root /usr/sbin/service supervisor start >/dev/null 2>&1
+* * * * * root /usr/bin/supervisorctl pid >/dev/null 2>&1 || /usr/sbin/service supervisor start >/dev/null 2>&1

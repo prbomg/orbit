@@ -1,0 +1,1782 @@
+{
+  "version": "2026-10-15",
+  "sources": [
+    "https://yandex.ru/dev/tasks-api/doc/ru/regions",
+    "https://aistudio.yandex.ru/ru/docs/search-api/reference/regions"
+  ],
+  "regions": [
+    {
+      "id": "29386",
+      "name": "Абхазия",
+      "geolocation": null
+    },
+    {
+      "id": "211",
+      "name": "Австралия",
+      "geolocation": null
+    },
+    {
+      "id": "113",
+      "name": "Австрия",
+      "geolocation": null
+    },
+    {
+      "id": "167",
+      "name": "Азербайджан",
+      "geolocation": null
+    },
+    {
+      "id": "10054",
+      "name": "Албания",
+      "geolocation": null
+    },
+    {
+      "id": "20826",
+      "name": "Алжир",
+      "geolocation": null
+    },
+    {
+      "id": "21182",
+      "name": "Ангола",
+      "geolocation": null
+    },
+    {
+      "id": "10088",
+      "name": "Андорра",
+      "geolocation": null
+    },
+    {
+      "id": "20856",
+      "name": "Антигуа и Барбуда",
+      "geolocation": null
+    },
+    {
+      "id": "93",
+      "name": "Аргентина",
+      "geolocation": null
+    },
+    {
+      "id": "168",
+      "name": "Армения",
+      "geolocation": null
+    },
+    {
+      "id": "21536",
+      "name": "Аруба",
+      "geolocation": null
+    },
+    {
+      "id": "20",
+      "name": "Архангельск",
+      "geolocation": {
+        "latitude": 64.5461,
+        "longitude": 40.55183,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/581049/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "37",
+      "name": "Астрахань",
+      "geolocation": {
+        "latitude": 46.34968,
+        "longitude": 48.04076,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/580497/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "10090",
+      "name": "Афганистан",
+      "geolocation": null
+    },
+    {
+      "id": "21325",
+      "name": "Багамы",
+      "geolocation": null
+    },
+    {
+      "id": "10091",
+      "name": "Бангладеш",
+      "geolocation": null
+    },
+    {
+      "id": "21019",
+      "name": "Барбадос",
+      "geolocation": null
+    },
+    {
+      "id": "197",
+      "name": "Барнаул",
+      "geolocation": {
+        "latitude": 53.36199,
+        "longitude": 83.72786,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1510853/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "10532",
+      "name": "Бахрейн",
+      "geolocation": null
+    },
+    {
+      "id": "149",
+      "name": "Беларусь",
+      "geolocation": null
+    },
+    {
+      "id": "4",
+      "name": "Белгород",
+      "geolocation": {
+        "latitude": 50.60343,
+        "longitude": 36.58091,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/578072/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21544",
+      "name": "Белиз",
+      "geolocation": null
+    },
+    {
+      "id": "114",
+      "name": "Бельгия",
+      "geolocation": null
+    },
+    {
+      "id": "20869",
+      "name": "Бенин",
+      "geolocation": null
+    },
+    {
+      "id": "21546",
+      "name": "Бермуды",
+      "geolocation": null
+    },
+    {
+      "id": "77",
+      "name": "Благовещенск",
+      "geolocation": {
+        "latitude": 50.27593,
+        "longitude": 127.52637,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/2026609/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "115",
+      "name": "Болгария",
+      "geolocation": null
+    },
+    {
+      "id": "10015",
+      "name": "Боливия",
+      "geolocation": null
+    },
+    {
+      "id": "10057",
+      "name": "Босния и Герцеговина",
+      "geolocation": null
+    },
+    {
+      "id": "21239",
+      "name": "Ботсвана",
+      "geolocation": null
+    },
+    {
+      "id": "94",
+      "name": "Бразилия",
+      "geolocation": null
+    },
+    {
+      "id": "20274",
+      "name": "Бруней",
+      "geolocation": null
+    },
+    {
+      "id": "191",
+      "name": "Брянск",
+      "geolocation": {
+        "latitude": 53.27096,
+        "longitude": 34.32143,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/571476/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21165",
+      "name": "Буркина-Фасо",
+      "geolocation": null
+    },
+    {
+      "id": "21214",
+      "name": "Бурунди",
+      "geolocation": null
+    },
+    {
+      "id": "21550",
+      "name": "Бутан",
+      "geolocation": null
+    },
+    {
+      "id": "21556",
+      "name": "Вануату",
+      "geolocation": null
+    },
+    {
+      "id": "21359",
+      "name": "Ватикан",
+      "geolocation": null
+    },
+    {
+      "id": "24",
+      "name": "Великий Новгород",
+      "geolocation": {
+        "latitude": 58.52131,
+        "longitude": 31.27104,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/519336/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "102",
+      "name": "Великобритания",
+      "geolocation": null
+    },
+    {
+      "id": "116",
+      "name": "Венгрия",
+      "geolocation": null
+    },
+    {
+      "id": "21184",
+      "name": "Венесуэла",
+      "geolocation": null
+    },
+    {
+      "id": "21559",
+      "name": "Виргинские Острова (Великобритания)",
+      "geolocation": null
+    },
+    {
+      "id": "21553",
+      "name": "Виргинские острова (США)",
+      "geolocation": null
+    },
+    {
+      "id": "75",
+      "name": "Владивосток",
+      "geolocation": {
+        "latitude": 43.10562,
+        "longitude": 131.87353,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/2013348/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "33",
+      "name": "Владикавказ",
+      "geolocation": {
+        "latitude": 43.04101,
+        "longitude": 44.66986,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/473249/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "192",
+      "name": "Владимир",
+      "geolocation": {
+        "latitude": 56.13854,
+        "longitude": 40.39976,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/473247/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "38",
+      "name": "Волгоград",
+      "geolocation": {
+        "latitude": 48.71378,
+        "longitude": 44.4976,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/472757/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21",
+      "name": "Вологда",
+      "geolocation": {
+        "latitude": 59.2239,
+        "longitude": 39.88398,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/472459/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "193",
+      "name": "Воронеж",
+      "geolocation": {
+        "latitude": 51.66833,
+        "longitude": 39.19204,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/472045/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21562",
+      "name": "Восточный Тимор",
+      "geolocation": null
+    },
+    {
+      "id": "10093",
+      "name": "Вьетнам",
+      "geolocation": null
+    },
+    {
+      "id": "21137",
+      "name": "Габон",
+      "geolocation": null
+    },
+    {
+      "id": "21321",
+      "name": "Гаити",
+      "geolocation": null
+    },
+    {
+      "id": "21477",
+      "name": "Гайана",
+      "geolocation": null
+    },
+    {
+      "id": "21010",
+      "name": "Гамбия",
+      "geolocation": null
+    },
+    {
+      "id": "20802",
+      "name": "Гана",
+      "geolocation": null
+    },
+    {
+      "id": "20968",
+      "name": "Гватемала",
+      "geolocation": null
+    },
+    {
+      "id": "21451",
+      "name": "Гвиана",
+      "geolocation": null
+    },
+    {
+      "id": "20818",
+      "name": "Гвинея",
+      "geolocation": null
+    },
+    {
+      "id": "21143",
+      "name": "Гвинея-Бисау",
+      "geolocation": null
+    },
+    {
+      "id": "96",
+      "name": "Германия",
+      "geolocation": null
+    },
+    {
+      "id": "10089",
+      "name": "Гибралтар",
+      "geolocation": null
+    },
+    {
+      "id": "21175",
+      "name": "Гондурас",
+      "geolocation": null
+    },
+    {
+      "id": "98552",
+      "name": "Государство Палестина",
+      "geolocation": null
+    },
+    {
+      "id": "21426",
+      "name": "Гренада",
+      "geolocation": null
+    },
+    {
+      "id": "21567",
+      "name": "Гренландия",
+      "geolocation": null
+    },
+    {
+      "id": "246",
+      "name": "Греция",
+      "geolocation": null
+    },
+    {
+      "id": "1106",
+      "name": "Грозный",
+      "geolocation": {
+        "latitude": 43.31195,
+        "longitude": 45.68895,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/558418/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "169",
+      "name": "Грузия",
+      "geolocation": null
+    },
+    {
+      "id": "20747",
+      "name": "Гуам",
+      "geolocation": null
+    },
+    {
+      "id": "203",
+      "name": "Дания",
+      "geolocation": null
+    },
+    {
+      "id": "20762",
+      "name": "Демократическая Республика Конго",
+      "geolocation": null
+    },
+    {
+      "id": "21475",
+      "name": "Джибути",
+      "geolocation": null
+    },
+    {
+      "id": "20746",
+      "name": "Доминика",
+      "geolocation": null
+    },
+    {
+      "id": "20917",
+      "name": "Доминиканская Респблика",
+      "geolocation": null
+    },
+    {
+      "id": "1056",
+      "name": "Египет",
+      "geolocation": null
+    },
+    {
+      "id": "54",
+      "name": "Екатеринбург",
+      "geolocation": {
+        "latitude": 56.85733,
+        "longitude": 60.61529,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1486209/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21196",
+      "name": "Замбия",
+      "geolocation": null
+    },
+    {
+      "id": "20954",
+      "name": "Зимбабве",
+      "geolocation": null
+    },
+    {
+      "id": "5",
+      "name": "Иваново",
+      "geolocation": {
+        "latitude": 56.99988,
+        "longitude": 40.97257,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/555312/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "181",
+      "name": "Израиль",
+      "geolocation": null
+    },
+    {
+      "id": "994",
+      "name": "Индия",
+      "geolocation": null
+    },
+    {
+      "id": "10095",
+      "name": "Индонезия",
+      "geolocation": null
+    },
+    {
+      "id": "10535",
+      "name": "Иордания",
+      "geolocation": null
+    },
+    {
+      "id": "20572",
+      "name": "Ирак",
+      "geolocation": null
+    },
+    {
+      "id": "10536",
+      "name": "Иран",
+      "geolocation": null
+    },
+    {
+      "id": "63",
+      "name": "Иркутск",
+      "geolocation": {
+        "latitude": 52.29566,
+        "longitude": 104.29076,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/2023469/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "10063",
+      "name": "Ирландия",
+      "geolocation": null
+    },
+    {
+      "id": "10064",
+      "name": "Исландия",
+      "geolocation": null
+    },
+    {
+      "id": "204",
+      "name": "Испания",
+      "geolocation": null
+    },
+    {
+      "id": "205",
+      "name": "Италия",
+      "geolocation": null
+    },
+    {
+      "id": "21551",
+      "name": "Йемен",
+      "geolocation": null
+    },
+    {
+      "id": "41",
+      "name": "Йошкар-Ола",
+      "geolocation": {
+        "latitude": 56.63877,
+        "longitude": 47.89078,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/466806/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21326",
+      "name": "Кабо-Верде",
+      "geolocation": null
+    },
+    {
+      "id": "43",
+      "name": "Казань",
+      "geolocation": {
+        "latitude": 55.78874,
+        "longitude": 49.12214,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/551487/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "159",
+      "name": "Казахстан",
+      "geolocation": null
+    },
+    {
+      "id": "22",
+      "name": "Калининград",
+      "geolocation": {
+        "latitude": 54.70639,
+        "longitude": 20.51102,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/554234/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "20975",
+      "name": "Камбоджа",
+      "geolocation": null
+    },
+    {
+      "id": "20736",
+      "name": "Камерун",
+      "geolocation": null
+    },
+    {
+      "id": "95",
+      "name": "Канада",
+      "geolocation": null
+    },
+    {
+      "id": "21486",
+      "name": "Катар",
+      "geolocation": null
+    },
+    {
+      "id": "64",
+      "name": "Кемерово",
+      "geolocation": {
+        "latitude": 55.35417,
+        "longitude": 86.10435,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1503901/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21223",
+      "name": "Кения",
+      "geolocation": null
+    },
+    {
+      "id": "20574",
+      "name": "Кипр",
+      "geolocation": null
+    },
+    {
+      "id": "21572",
+      "name": "Кирибати",
+      "geolocation": null
+    },
+    {
+      "id": "134",
+      "name": "Китай",
+      "geolocation": null
+    },
+    {
+      "id": "21191",
+      "name": "Колумбия",
+      "geolocation": null
+    },
+    {
+      "id": "21297",
+      "name": "Коморы",
+      "geolocation": null
+    },
+    {
+      "id": "21198",
+      "name": "Конго",
+      "geolocation": null
+    },
+    {
+      "id": "21131",
+      "name": "Коста-Рика",
+      "geolocation": null
+    },
+    {
+      "id": "7",
+      "name": "Кострома",
+      "geolocation": {
+        "latitude": 57.76638,
+        "longitude": 40.92828,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/543878/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "20733",
+      "name": "Кот-д’Ивуар",
+      "geolocation": null
+    },
+    {
+      "id": "35",
+      "name": "Краснодар",
+      "geolocation": {
+        "latitude": 45.04534,
+        "longitude": 38.98178,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/542420/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "62",
+      "name": "Красноярск",
+      "geolocation": {
+        "latitude": 56.03742,
+        "longitude": 92.93136,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1502026/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "10017",
+      "name": "Куба",
+      "geolocation": null
+    },
+    {
+      "id": "10537",
+      "name": "Кувейт",
+      "geolocation": null
+    },
+    {
+      "id": "53",
+      "name": "Курган",
+      "geolocation": {
+        "latitude": 55.44905,
+        "longitude": 65.34344,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1501321/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "8",
+      "name": "Курск",
+      "geolocation": {
+        "latitude": 51.72689,
+        "longitude": 36.18457,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/538560/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "207",
+      "name": "Кыргызстан",
+      "geolocation": null
+    },
+    {
+      "id": "21538",
+      "name": "Кюрасао",
+      "geolocation": null
+    },
+    {
+      "id": "20972",
+      "name": "Лаос",
+      "geolocation": null
+    },
+    {
+      "id": "206",
+      "name": "Латвия",
+      "geolocation": null
+    },
+    {
+      "id": "21261",
+      "name": "Лесото",
+      "geolocation": null
+    },
+    {
+      "id": "21278",
+      "name": "Либерия",
+      "geolocation": null
+    },
+    {
+      "id": "10538",
+      "name": "Ливан",
+      "geolocation": null
+    },
+    {
+      "id": "10023",
+      "name": "Ливия",
+      "geolocation": null
+    },
+    {
+      "id": "9",
+      "name": "Липецк",
+      "geolocation": {
+        "latitude": 52.5876,
+        "longitude": 39.55151,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/535121/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "117",
+      "name": "Литва",
+      "geolocation": null
+    },
+    {
+      "id": "10067",
+      "name": "Лихтенштейн",
+      "geolocation": null
+    },
+    {
+      "id": "21203",
+      "name": "Люксембург",
+      "geolocation": null
+    },
+    {
+      "id": "21241",
+      "name": "Маврикий",
+      "geolocation": null
+    },
+    {
+      "id": "21349",
+      "name": "Мавритания",
+      "geolocation": null
+    },
+    {
+      "id": "20854",
+      "name": "Мадагаскар",
+      "geolocation": null
+    },
+    {
+      "id": "21151",
+      "name": "Малави",
+      "geolocation": null
+    },
+    {
+      "id": "10097",
+      "name": "Малайзия",
+      "geolocation": null
+    },
+    {
+      "id": "21004",
+      "name": "Мали",
+      "geolocation": null
+    },
+    {
+      "id": "10098",
+      "name": "Мальдивы",
+      "geolocation": null
+    },
+    {
+      "id": "10069",
+      "name": "Мальта",
+      "geolocation": null
+    },
+    {
+      "id": "10020",
+      "name": "Марокко",
+      "geolocation": null
+    },
+    {
+      "id": "101521",
+      "name": "Мартиника",
+      "geolocation": null
+    },
+    {
+      "id": "21578",
+      "name": "Маршалловы Острова",
+      "geolocation": null
+    },
+    {
+      "id": "28",
+      "name": "Махачкала",
+      "geolocation": {
+        "latitude": 42.97782,
+        "longitude": 47.50027,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/532096/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "20271",
+      "name": "Мексика",
+      "geolocation": null
+    },
+    {
+      "id": "21235",
+      "name": "Мозамбик",
+      "geolocation": null
+    },
+    {
+      "id": "208",
+      "name": "Молдова",
+      "geolocation": null
+    },
+    {
+      "id": "10070",
+      "name": "Монако",
+      "geolocation": null
+    },
+    {
+      "id": "10099",
+      "name": "Монголия",
+      "geolocation": null
+    },
+    {
+      "id": "37176",
+      "name": "Монтсеррат",
+      "geolocation": null
+    },
+    {
+      "id": "213",
+      "name": "Москва",
+      "geolocation": {
+        "latitude": 55.75204,
+        "longitude": 37.61781,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/524901/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "1",
+      "name": "Москва и Московская область",
+      "geolocation": null
+    },
+    {
+      "id": "23",
+      "name": "Мурманск",
+      "geolocation": {
+        "latitude": 68.96778,
+        "longitude": 33.09922,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/524305/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "10100",
+      "name": "Мьянма",
+      "geolocation": null
+    },
+    {
+      "id": "1092",
+      "name": "Назрань",
+      "geolocation": {
+        "latitude": 43.22597,
+        "longitude": 44.77323,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/523064/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "30",
+      "name": "Нальчик",
+      "geolocation": {
+        "latitude": 43.49806,
+        "longitude": 43.61889,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/523523/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21217",
+      "name": "Намибия",
+      "geolocation": null
+    },
+    {
+      "id": "21582",
+      "name": "Науру",
+      "geolocation": null
+    },
+    {
+      "id": "10101",
+      "name": "Непал",
+      "geolocation": null
+    },
+    {
+      "id": "21339",
+      "name": "Нигер",
+      "geolocation": null
+    },
+    {
+      "id": "20741",
+      "name": "Нигерия",
+      "geolocation": null
+    },
+    {
+      "id": "118",
+      "name": "Нидерланды",
+      "geolocation": null
+    },
+    {
+      "id": "47",
+      "name": "Нижний Новгород",
+      "geolocation": {
+        "latitude": 56.32867,
+        "longitude": 44.00205,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/520555/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21231",
+      "name": "Никарагуа",
+      "geolocation": null
+    },
+    {
+      "id": "98542",
+      "name": "Ниуэ",
+      "geolocation": null
+    },
+    {
+      "id": "139",
+      "name": "Новая Зеландия",
+      "geolocation": null
+    },
+    {
+      "id": "21584",
+      "name": "Новая Каледония",
+      "geolocation": null
+    },
+    {
+      "id": "65",
+      "name": "Новосибирск",
+      "geolocation": {
+        "latitude": 55.02259,
+        "longitude": 82.93175,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1496747/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "119",
+      "name": "Норвегия",
+      "geolocation": null
+    },
+    {
+      "id": "98539",
+      "name": "Норфолк",
+      "geolocation": null
+    },
+    {
+      "id": "210",
+      "name": "ОАЭ",
+      "geolocation": null
+    },
+    {
+      "id": "21586",
+      "name": "Оман",
+      "geolocation": null
+    },
+    {
+      "id": "66",
+      "name": "Омск",
+      "geolocation": {
+        "latitude": 54.99244,
+        "longitude": 73.36859,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1496153/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "48",
+      "name": "Оренбург",
+      "geolocation": {
+        "latitude": 51.76712,
+        "longitude": 55.09883,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/515003/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "10",
+      "name": "Орёл",
+      "geolocation": {
+        "latitude": 52.96879,
+        "longitude": 36.0791,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/515012/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21570",
+      "name": "Острова Кайман",
+      "geolocation": null
+    },
+    {
+      "id": "21574",
+      "name": "Острова Кука",
+      "geolocation": null
+    },
+    {
+      "id": "10102",
+      "name": "Пакистан",
+      "geolocation": null
+    },
+    {
+      "id": "21589",
+      "name": "Палау",
+      "geolocation": null
+    },
+    {
+      "id": "21299",
+      "name": "Панама",
+      "geolocation": null
+    },
+    {
+      "id": "20739",
+      "name": "Папуа — Новая Гвинея",
+      "geolocation": null
+    },
+    {
+      "id": "20992",
+      "name": "Парагвай",
+      "geolocation": null
+    },
+    {
+      "id": "49",
+      "name": "Пенза",
+      "geolocation": {
+        "latitude": 53.19568,
+        "longitude": 45.01075,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/511565/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "50",
+      "name": "Пермь",
+      "geolocation": {
+        "latitude": 58.01046,
+        "longitude": 56.25017,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/511196/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21156",
+      "name": "Перу",
+      "geolocation": null
+    },
+    {
+      "id": "120",
+      "name": "Польша",
+      "geolocation": null
+    },
+    {
+      "id": "10074",
+      "name": "Португалия",
+      "geolocation": null
+    },
+    {
+      "id": "25",
+      "name": "Псков",
+      "geolocation": {
+        "latitude": 57.81922,
+        "longitude": 28.33181,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/504341/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "20764",
+      "name": "Пуэрто-Рико",
+      "geolocation": null
+    },
+    {
+      "id": "225",
+      "name": "Россия",
+      "geolocation": null
+    },
+    {
+      "id": "39",
+      "name": "Ростов-на-Дону",
+      "geolocation": {
+        "latitude": 47.21997,
+        "longitude": 39.70769,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/501175/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21371",
+      "name": "Руанда",
+      "geolocation": null
+    },
+    {
+      "id": "10077",
+      "name": "Румыния",
+      "geolocation": null
+    },
+    {
+      "id": "11",
+      "name": "Рязань",
+      "geolocation": {
+        "latitude": 54.62696,
+        "longitude": 39.70415,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/500096/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "84",
+      "name": "США",
+      "geolocation": null
+    },
+    {
+      "id": "20769",
+      "name": "Сальвадор",
+      "geolocation": null
+    },
+    {
+      "id": "51",
+      "name": "Самара",
+      "geolocation": {
+        "latitude": 53.20767,
+        "longitude": 50.13553,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/499099/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "20860",
+      "name": "Самоа",
+      "geolocation": null
+    },
+    {
+      "id": "20790",
+      "name": "Сан-Марино",
+      "geolocation": null
+    },
+    {
+      "id": "21199",
+      "name": "Сан-Томе и Принсипи",
+      "geolocation": null
+    },
+    {
+      "id": "2",
+      "name": "Санкт-Петербург",
+      "geolocation": {
+        "latitude": 59.93863,
+        "longitude": 30.31413,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/498817/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "42",
+      "name": "Саранск",
+      "geolocation": {
+        "latitude": 54.18485,
+        "longitude": 45.17166,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/498698/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "10540",
+      "name": "Саудовская Аравия",
+      "geolocation": null
+    },
+    {
+      "id": "20789",
+      "name": "Сахарская Арабская Демократическая Республика",
+      "geolocation": null
+    },
+    {
+      "id": "21251",
+      "name": "Свазиленд",
+      "geolocation": null
+    },
+    {
+      "id": "10104",
+      "name": "Северная Корея",
+      "geolocation": null
+    },
+    {
+      "id": "10068",
+      "name": "Северная Македония",
+      "geolocation": null
+    },
+    {
+      "id": "10022",
+      "name": "Сейшелы",
+      "geolocation": null
+    },
+    {
+      "id": "21441",
+      "name": "Сенегал",
+      "geolocation": null
+    },
+    {
+      "id": "20754",
+      "name": "Сент-Винсент и Гренадины",
+      "geolocation": null
+    },
+    {
+      "id": "21042",
+      "name": "Сент-Китс и Невис",
+      "geolocation": null
+    },
+    {
+      "id": "21395",
+      "name": "Сент-Люсия",
+      "geolocation": null
+    },
+    {
+      "id": "180",
+      "name": "Сербия",
+      "geolocation": null
+    },
+    {
+      "id": "10105",
+      "name": "Сингапур",
+      "geolocation": null
+    },
+    {
+      "id": "109724",
+      "name": "Синт-Мартен",
+      "geolocation": null
+    },
+    {
+      "id": "10542",
+      "name": "Сирия",
+      "geolocation": null
+    },
+    {
+      "id": "121",
+      "name": "Словакия",
+      "geolocation": null
+    },
+    {
+      "id": "122",
+      "name": "Словения",
+      "geolocation": null
+    },
+    {
+      "id": "12",
+      "name": "Смоленск",
+      "geolocation": {
+        "latitude": 54.77826,
+        "longitude": 32.05088,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/491687/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "20915",
+      "name": "Соломоновы Острова",
+      "geolocation": null
+    },
+    {
+      "id": "21227",
+      "name": "Сомали",
+      "geolocation": null
+    },
+    {
+      "id": "239",
+      "name": "Сочи",
+      "geolocation": {
+        "latitude": 43.59699,
+        "longitude": 39.72477,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/491422/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "36",
+      "name": "Ставрополь",
+      "geolocation": {
+        "latitude": 45.03442,
+        "longitude": 41.9642,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/487846/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "20957",
+      "name": "Судан",
+      "geolocation": null
+    },
+    {
+      "id": "973",
+      "name": "Сургут",
+      "geolocation": {
+        "latitude": 61.25757,
+        "longitude": 73.41775,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1490624/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21344",
+      "name": "Суринам",
+      "geolocation": null
+    },
+    {
+      "id": "21219",
+      "name": "Сьерра-Леоне",
+      "geolocation": null
+    },
+    {
+      "id": "209",
+      "name": "Таджикистан",
+      "geolocation": null
+    },
+    {
+      "id": "995",
+      "name": "Таиланд",
+      "geolocation": null
+    },
+    {
+      "id": "29385",
+      "name": "Тайвань",
+      "geolocation": null
+    },
+    {
+      "id": "13",
+      "name": "Тамбов",
+      "geolocation": {
+        "latitude": 52.73632,
+        "longitude": 41.44102,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/484646/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21208",
+      "name": "Танзания",
+      "geolocation": null
+    },
+    {
+      "id": "14",
+      "name": "Тверь",
+      "geolocation": {
+        "latitude": 56.85836,
+        "longitude": 35.90057,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/480060/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21595",
+      "name": "Теркс и Кайкос",
+      "geolocation": null
+    },
+    {
+      "id": "21171",
+      "name": "Того",
+      "geolocation": null
+    },
+    {
+      "id": "67",
+      "name": "Томск",
+      "geolocation": {
+        "latitude": 56.50049,
+        "longitude": 84.98216,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1489425/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21599",
+      "name": "Тонга",
+      "geolocation": null
+    },
+    {
+      "id": "21187",
+      "name": "Тринидад и Тобаго",
+      "geolocation": null
+    },
+    {
+      "id": "21601",
+      "name": "Тувалу",
+      "geolocation": null
+    },
+    {
+      "id": "15",
+      "name": "Тула",
+      "geolocation": {
+        "latitude": 54.19609,
+        "longitude": 37.61822,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/480562/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "10024",
+      "name": "Тунис",
+      "geolocation": null
+    },
+    {
+      "id": "170",
+      "name": "Туркменистан",
+      "geolocation": null
+    },
+    {
+      "id": "983",
+      "name": "Турция",
+      "geolocation": null
+    },
+    {
+      "id": "21230",
+      "name": "Уганда",
+      "geolocation": null
+    },
+    {
+      "id": "171",
+      "name": "Узбекистан",
+      "geolocation": null
+    },
+    {
+      "id": "187",
+      "name": "Украина",
+      "geolocation": null
+    },
+    {
+      "id": "195",
+      "name": "Ульяновск",
+      "geolocation": {
+        "latitude": 54.32824,
+        "longitude": 48.38657,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/479123/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21289",
+      "name": "Уругвай",
+      "geolocation": null
+    },
+    {
+      "id": "172",
+      "name": "Уфа",
+      "geolocation": {
+        "latitude": 54.74306,
+        "longitude": 55.96779,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/479561/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21580",
+      "name": "Федеративные Штаты Микронезии",
+      "geolocation": null
+    },
+    {
+      "id": "10030",
+      "name": "Фиджи",
+      "geolocation": null
+    },
+    {
+      "id": "10108",
+      "name": "Филиппины",
+      "geolocation": null
+    },
+    {
+      "id": "123",
+      "name": "Финляндия",
+      "geolocation": null
+    },
+    {
+      "id": "101519",
+      "name": "Фолклендские острова",
+      "geolocation": null
+    },
+    {
+      "id": "124",
+      "name": "Франция",
+      "geolocation": null
+    },
+    {
+      "id": "21330",
+      "name": "Французская Полинезия",
+      "geolocation": null
+    },
+    {
+      "id": "76",
+      "name": "Хабаровск",
+      "geolocation": {
+        "latitude": 48.46204,
+        "longitude": 135.0971,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/2022890/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "10083",
+      "name": "Хорватия",
+      "geolocation": null
+    },
+    {
+      "id": "21007",
+      "name": "Центральноафриканская Республика",
+      "geolocation": null
+    },
+    {
+      "id": "21331",
+      "name": "Чад",
+      "geolocation": null
+    },
+    {
+      "id": "45",
+      "name": "Чебоксары",
+      "geolocation": {
+        "latitude": 56.13218,
+        "longitude": 47.246,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/569696/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "56",
+      "name": "Челябинск",
+      "geolocation": {
+        "latitude": 55.1611,
+        "longitude": 61.42877,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/1508291/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "1104",
+      "name": "Черкесск",
+      "geolocation": {
+        "latitude": 44.22375,
+        "longitude": 42.04624,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/569154/",
+        "kind": "city-center-circle"
+      }
+    },
+    {
+      "id": "21610",
+      "name": "Черногория",
+      "geolocation": null
+    },
+    {
+      "id": "125",
+      "name": "Чехия",
+      "geolocation": null
+    },
+    {
+      "id": "20862",
+      "name": "Чили",
+      "geolocation": null
+    },
+    {
+      "id": "126",
+      "name": "Швейцария",
+      "geolocation": null
+    },
+    {
+      "id": "127",
+      "name": "Швеция",
+      "geolocation": null
+    },
+    {
+      "id": "10109",
+      "name": "Шри-Ланка",
+      "geolocation": null
+    },
+    {
+      "id": "20785",
+      "name": "Эквадор",
+      "geolocation": null
+    },
+    {
+      "id": "21045",
+      "name": "Экваториальная Гвинея",
+      "geolocation": null
+    },
+    {
+      "id": "20989",
+      "name": "Эритрея",
+      "geolocation": null
+    },
+    {
+      "id": "179",
+      "name": "Эстония",
+      "geolocation": null
+    },
+    {
+      "id": "20768",
+      "name": "Эфиопия",
+      "geolocation": null
+    },
+    {
+      "id": "10021",
+      "name": "Южная Африка",
+      "geolocation": null
+    },
+    {
+      "id": "135",
+      "name": "Южная Корея",
+      "geolocation": null
+    },
+    {
+      "id": "29387",
+      "name": "Южная Осетия",
+      "geolocation": null
+    },
+    {
+      "id": "108137",
+      "name": "Южный Судан",
+      "geolocation": null
+    },
+    {
+      "id": "10013",
+      "name": "Ямайка",
+      "geolocation": null
+    },
+    {
+      "id": "137",
+      "name": "Япония",
+      "geolocation": null
+    },
+    {
+      "id": "16",
+      "name": "Ярославль",
+      "geolocation": {
+        "latitude": 57.62987,
+        "longitude": 39.87368,
+        "radiusKm": 1,
+        "source": "https://www.geonames.org/468902/",
+        "kind": "city-center-circle"
+      }
+    }
+  ],
+  "geolocationMetadata": {
+    "version": 1,
+    "source": "https://download.geonames.org/export/dump/",
+    "license": "CC BY 4.0",
+    "licenseUrl": "https://creativecommons.org/licenses/by/4.0/",
+    "retrievedAt": "2026-10-15",
+    "note": "Reference city points with a configured 1 km simulation radius; not administrative polygons. Countries, territories and unknown locations require explicit project coordinates."
+  }
+}

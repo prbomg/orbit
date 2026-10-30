@@ -1,7 +1,8 @@
+import { behaviorRandom } from './behavior-random.mjs';
 import { setTimeout as delay } from 'node:timers/promises';
 import { performance } from 'node:perf_hooks';
 
-export const randomInt = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+export const randomInt = (min, max, random = behaviorRandom) => Math.floor(random() * (max - min + 1)) + min;
 export const sleep = (ms, signal) => delay(Math.max(0, ms), undefined, { signal });
 
 export class TaskStoppedError extends Error {
@@ -16,9 +17,9 @@ export function bezierPoint(t, p0, p1, p2, p3) {
   };
 }
 
-export async function moveAlongBezier(page, from, to, { signal, durationMs = randomInt(500, 1300) } = {}) {
+export async function moveAlongBezier(page, from, to, { signal, random = behaviorRandom, durationMs = randomInt(500, 1300, random) } = {}) {
   const viewport = page.viewportSize() ?? { width: 1280, height: 720 };
-  const control = () => ({ x: randomInt(0, viewport.width - 1), y: randomInt(0, viewport.height - 1) });
+  const control = () => ({ x: randomInt(0, viewport.width - 1, random), y: randomInt(0, viewport.height - 1, random) });
   const p1 = control(); const p2 = control();
   const steps = Math.max(12, Math.min(70, Math.ceil(durationMs / 20)));
   const started = performance.now();

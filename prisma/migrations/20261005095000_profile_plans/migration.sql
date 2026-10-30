@@ -1,0 +1,11 @@
+ALTER TABLE "Profile" ADD COLUMN "readinessVerifiedAt" DATETIME;
+ALTER TABLE "Profile" ADD COLUMN "readinessValidUntil" DATETIME;
+ALTER TABLE "Profile" ADD COLUMN "storageMode" TEXT NOT NULL DEFAULT 'snapshot';
+ALTER TABLE "WarmupJob" ADD COLUMN "plan" JSONB;
+ALTER TABLE "WarmupJob" ADD COLUMN "firstSessionAt" DATETIME;
+ALTER TABLE "WarmupJob" ADD COLUMN "minReadyAt" DATETIME;
+ALTER TABLE "WarmupJob" ADD COLUMN "dependencySince" DATETIME;
+ALTER TABLE "WarmupJob" ADD COLUMN "dependencyRetries" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Settings" ADD COLUMN "dailyProfileDemand" INTEGER NOT NULL DEFAULT 0;
+ALTER TABLE "Settings" ADD COLUMN "readinessFreshnessHours" INTEGER NOT NULL DEFAULT 72;
+ALTER TABLE "Settings" ADD COLUMN "warmupSitePauses" JSONB;
